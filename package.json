@@ -1,0 +1,44 @@
+{
+  "name": "documittu",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tscomp build",
+    "watch": "tscomp watch",
+    "test": "tscomp test",
+    "prepublish": "npm run build",
+    "docs": "typedoc --tsconfig tsconfig.json --out docs --ignoreCompilerErrors --theme ./node_modules/beanloop-doc-theme && touch docs/.nojekyll"
+  },
+  "repository": "https://github.com/beanloop/boilerplate-configs.git",
+  "author": "Beanloop AB",
+  "license": "MIT",
+  "devDependencies": {
+    "beanloop-doc-theme": "^0.2.0",
+    "tscomp": "^0.8.0",
+    "tslint": "^4.0.2",
+    "tslint-config-beanloop": "^0.1.0",
+    "typedoc": "^0.5.3"
+  },
+  "dependencies": {
+    "@types/node": "^7.0.5",
+    "@types/react": "^15.0.10",
+    "@types/react-dom": "^0.14.23",
+    "@types/webpack": "^2.2.6",
+    "babel-polyfill": "^6.23.0",
+    "html-loader": "^0.4.4",
+    "postcss-cssnext": "^2.9.0",
+    "postcss-modules-values": "^1.2.2",
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2",
+    "react-markdown": "^2.4.4",
+    "react-markdown-loader": "^1.1.10",
+    "react-router": "next",
+    "react-router-dom": "^4.0.0-beta.6",
+    "react-toolbox": "^2.0.0-beta.6",
+    "react-toolbox-themr": "^1.0.2",
+    "recompose": "^0.22.0",
+    "slug": "^0.9.1",
+    "webpack": "1"
+  }
+}

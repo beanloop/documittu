@@ -1,0 +1,23 @@
+
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": false,
+    "target": "es2015",
+    "lib": ["dom", "es5", "es2015", "es2016", "es2017"],
+    "jsx": "react",
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*",
+    "typings/**/*",
+    "node_modules/@types/jest/*"
+  ],
+  "exclude": [],
+  "compileOnSave": false,
+  "buildOnSave": false,
+  "atom": { "rewriteTsconfig": false }
+}
