@@ -1,4 +1,5 @@
 const path = require('path')
+var url = require('url')
 
 // We support resolving modules according to `NODE_PATH`.
 // This lets you use absolute paths in imports inside large monorepos:
@@ -12,7 +13,6 @@ const path = require('path')
 // Jest doesn’t need this because it already handles `NODE_PATH` out of the box.
 
 const srcPath = 'src'
-const buildPath = 'dist2'
 
 const nodePaths = (process.env.NODE_PATH || '')
   .split(process.platform === 'win32' ? ';' : ':')
@@ -26,24 +26,54 @@ function resolveOwn(relativePath) {
   return path.resolve(__dirname, relativePath)
 }
 function resolveTemplate(relativePath) {
-  return path.resolve(__dirname, '..', '..', 'template', relativePath)
+  return path.resolve(__dirname, '..', 'template', relativePath)
 }
+
+var envPublicUrl = process.env.PUBLIC_URL;
+
+function ensureSlash(path, needsSlash) {
+  var hasSlash = path.endsWith('/');
+  if (hasSlash && !needsSlash) {
+    return path.substr(path, path.length - 1);
+  } else if (!hasSlash && needsSlash) {
+    return path + '/';
+  } else {
+    return path;
+  }
+}
+
+function getPublicUrl(appPackageJson) {
+  return envPublicUrl || require(appPackageJson).homepage;
+}
+
+// We use `PUBLIC_URL` environment variable or "homepage" field to infer
+// "public path" at which the app is served.
+// Webpack needs to know it to put the right <script> hrefs into HTML even in
+// single-page apps that may serve index.html for nested URLs like /todos/42.
+// We can't use a relative path in HTML because we don't want to load something
+// like /todos/42/static/js/bundle.7289d.js. We have to know the root.
+function getServedPath(appPackageJson) {
+  var publicUrl = getPublicUrl(appPackageJson);
+  var servedUrl = envPublicUrl || (
+    publicUrl ? url.parse(publicUrl).pathname : '/'
+  );
+  return ensureSlash(servedUrl, true);
+}
+
 
 module.exports = {
   srcPath,
   appDocs: resolveApp('docs'),
   template: resolveTemplate('.'),
   appDir: resolveApp('.'),
-  appBuild: resolveApp(buildPath),
   appSrc: resolveApp(srcPath),
-  appHtml: resolveTemplate('src/index.html'),
   appEntry: resolveApp('docs/index'),
-  appDistIndexJs: resolveApp(`${buildPath}/index`),
   appPackageJson: resolveApp('package.json'),
-  appTsConfig: resolveApp('tsconfig.json'),
-  testsSetup: resolveApp(`${srcPath}/setupTests.js`),
   appNodeModules: resolveApp('node_modules'),
+  templateHtml: resolveTemplate('src/_index.html'),
+  templateTsConfig: resolveTemplate('tsconfig.json'),
   // this is empty with npm3 but node resolution searches higher anyway:
   ownNodeModules: resolveOwn('../node_modules'),
   nodePaths,
+  servedPath: getServedPath(resolveApp('package.json')),
 }
