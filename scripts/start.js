@@ -76,7 +76,7 @@ function setupCompiler(host, port, protocol) {
   // "invalid" is short for "bundle invalidated", it doesn't imply any errors.
   compiler.plugin('invalid', function() {
     if (isInteractive) {
-      clearConsole();
+      // clearConsole();
     }
     console.log('Compiling...');
   });
@@ -87,7 +87,7 @@ function setupCompiler(host, port, protocol) {
   // Whether or not you have warnings or errors, you will get this event.
   compiler.plugin('done', function(stats) {
     if (isInteractive) {
-      clearConsole();
+      // clearConsole();
     }
 
     // We have switched off the default Webpack output in WebpackDevServer
@@ -205,7 +205,8 @@ function addMiddleware(devServer) {
     // of both HTTP and WebSockets to work without false positives.
     var hpm = httpProxyMiddleware(pathname => mayProxy.test(pathname), {
       target: proxy,
-      logLevel: 'silent',
+      // logLevel: 'silent',
+      logLevel: 'verbose',
       onProxyReq: function(proxyReq, req, res) {
         // Browers may send Origin headers even with same-origin
         // requests. To prevent CORS issues, we have to change
@@ -239,7 +240,7 @@ function runDevServer(host, port, protocol) {
     compress: true,
     // Silence WebpackDevServer's own logs since they're generally not useful.
     // It will still show compile warnings and errors with this setting.
-    clientLogLevel: 'none',
+    clientLogLevel: 'info',
     // By default WebpackDevServer serves physical files from current directory
     // in addition to all the virtual build products that it serves from memory.
     // This is confusing because those files won’t automatically be available in
@@ -262,13 +263,14 @@ function runDevServer(host, port, protocol) {
     // updated. The WebpackDevServer client is included as an entry point
     // in the Webpack development configuration. Note that only changes
     // to CSS are currently hot reloaded. JS changes will refresh the browser.
-    hot: true,
+    hot: false,
     // It is important to tell WebpackDevServer to use the same "root" path
     // as we specified in the config. In development, we always serve from /.
     publicPath: config.output.publicPath,
     // WebpackDevServer is noisy by default so we emit custom message instead
     // by listening to the compiler events with `compiler.plugin` calls above.
-    quiet: true,
+    // quiet: true,
+    quiet: false,
     // Reportedly, this avoids CPU overload on some systems.
     // https://github.com/facebookincubator/create-react-app/issues/293
     watchOptions: {
@@ -277,7 +279,7 @@ function runDevServer(host, port, protocol) {
     // Enable HTTPS if the HTTPS environment variable is set to 'true'
     https: protocol === "https",
     host: host,
-    overlay: false,
+    // overlay: false,
   });
 
   // Our custom middleware proxies requests to /index.html or a remote API.

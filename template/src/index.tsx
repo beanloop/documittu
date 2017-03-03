@@ -1,6 +1,7 @@
 import 'babel-polyfill'
 import * as React from 'react'
 import {render} from 'react-dom'
+import apiData from './analyze-result.json'
 import './assets/prism.css'
 import {App} from './components/app'
 
@@ -16,15 +17,18 @@ function requireAll(requireContext) {
 
 export type Options = {
   title: string
-  pages: any
+  pages?: any
+  apiData?: any
 }
 
-export function start({title, pages: context}: Options) {
-  const pages = requireAll(context)
+export function start({title, pages, apiData}: Options) {
+  if (pages) {
+    pages = requireAll(pages)
+  }
   function renderApp(App) {
     const root = document.getElementById('app')
 
-    render(<App title={title} pages={pages} />, root)
+    render(<App title={title} pages={pages} apiData={apiData} />, root)
   }
 
   if (window.document) {
@@ -47,4 +51,9 @@ document.addEventListener('mouseup', event => {
   if (target && target.tagName) {
     target.blur()
   }
+})
+
+start({
+  title: 'test',
+  apiData,
 })

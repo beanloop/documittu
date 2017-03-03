@@ -11,15 +11,16 @@ import {materialColors} from 'styled-material/dist/src/colors'
 import {buildRoutes} from '../routes'
 import {mobile} from '../styles'
 import {theme} from '../theme'
-import {FolderPage} from './folder-page'
+import {FolderPage} from './pages/folder-page'
+import {ModuleRoutes} from './pages/module-page'
+import {SinglePage} from './pages/single-page'
 import {RouterLink} from './router-link'
-import {SinglePage} from './single-page'
 
 const Main = styled.main`
   margin: auto;
   padding: 16px;
   padding-top: 24px;
-  max-width: 960px;
+  max-width: 1050px;
 
   font-family: Roboto, Arial, sans-serif;
 
@@ -68,7 +69,7 @@ const Main = styled.main`
   }
 
   p {
-    max-wdith: 100%;
+    max-width: 600px;
     overflow: auto;
   }
 `
@@ -95,8 +96,8 @@ const NavLink: any = styled(Link)`
   }
 `
 
-export const App = ({title, pages}) => {
-  const routes = buildRoutes(pages)
+export const App = ({title, pages, apiData}) => {
+  const routes = buildRoutes(pages, apiData)
 
   return (
     <ThemeProvider theme={theme}>
@@ -115,11 +116,13 @@ export const App = ({title, pages}) => {
           </AppBar>
           <Main>
             {routes.map(route =>
-              <Route key={route.url} exact={route.url === '/'} path={route.url} render={() =>
+              <Route key={route.url} exact={route.url === '/asd'} path={route.url} render={() =>
                 route.kind === 'folder'
                   ? <FolderPage page={route} appTitle={title} />
                 : route.kind === 'page'
                   ? <SinglePage page={route} appTitle={title} />
+                : route.kind === 'module'
+                  ? <ModuleRoutes page={route} appTitle={title} />
                 :
                   <Redirect to={route.to} />
               } />

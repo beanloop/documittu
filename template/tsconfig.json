@@ -10,13 +10,15 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
     "rootDir": ".",
     "types": [
       "webpack"
     ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "typings/**/*"
   ],
   "exclude": [],
   "compileOnSave": false,

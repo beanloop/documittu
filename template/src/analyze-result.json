@@ -1,0 +1,802 @@
+{
+    "name": "react-form-helper",
+    "mainModule": "dist/src/index.js",
+    "outDir": "dist",
+    "declarationModule": {
+        "46": "dist/src/browser-components.js",
+        "77": "dist/src/browser-components.js",
+        "121": "dist/src/extras/scroll-into-view-helper.js",
+        "132": "dist/src/extras/scroll-into-view-helper.js",
+        "138": "dist/src/validation.js",
+        "139": "dist/src/index.js",
+        "151": "dist/src/index.js",
+        "165": "dist/src/index.js",
+        "842": "dist/src/index.js"
+    },
+    "modules": {
+        "dist/src/browser-components.js": {
+            "srcPath": "src/browser-components.tsx",
+            "outPath": "dist/src/browser-components.js",
+            "types": [],
+            "components": [
+                {
+                    "id": 46,
+                    "name": "BrowserButton",
+                    "documentation": "",
+                    "properties": [
+                        {
+                            "name": "loading",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Named",
+                                "name": "any",
+                                "id": 3
+                            },
+                            "optional": false
+                        }
+                    ]
+                },
+                {
+                    "id": 77,
+                    "name": "BrowserInput",
+                    "documentation": "",
+                    "properties": []
+                }
+            ]
+        },
+        "dist/src/extras/scroll-into-view-helper.js": {
+            "srcPath": "src/extras/scroll-into-view-helper.tsx",
+            "outPath": "dist/src/extras/scroll-into-view-helper.js",
+            "types": [
+                {
+                    "name": "HOC",
+                    "documentation": "",
+                    "type": {
+                        "kind": "Named",
+                        "name": "HOC",
+                        "id": 121
+                    },
+                    "id": 121,
+                    "properties": []
+                },
+                {
+                    "name": "Settings",
+                    "documentation": "",
+                    "type": {
+                        "kind": "Named",
+                        "name": "Settings",
+                        "id": 132
+                    },
+                    "id": 132,
+                    "properties": [
+                        {
+                            "name": "duration",
+                            "documentation": "Scroll time in ms",
+                            "type": {
+                                "kind": "Named",
+                                "name": "number",
+                                "id": 9
+                            },
+                            "optional": true
+                        }
+                    ]
+                }
+            ],
+            "components": []
+        },
+        "dist/src/extras/scroll-into-view-helper.test.js": {
+            "srcPath": "src/extras/scroll-into-view-helper.test.tsx",
+            "outPath": "dist/src/extras/scroll-into-view-helper.test.js",
+            "types": [],
+            "components": []
+        },
+        "dist/src/validation.js": {
+            "srcPath": "src/validation.ts",
+            "outPath": "dist/src/validation.js",
+            "types": [
+                {
+                    "name": "ValidationType",
+                    "documentation": "",
+                    "type": {
+                        "kind": "Named",
+                        "name": "ValidationType",
+                        "id": 138
+                    },
+                    "id": 138,
+                    "properties": []
+                }
+            ],
+            "components": []
+        },
+        "dist/src/index.js": {
+            "srcPath": "src/index.tsx",
+            "outPath": "dist/src/index.js",
+            "types": [
+                {
+                    "name": "FieldConfig",
+                    "documentation": "",
+                    "type": {
+                        "kind": "Named",
+                        "name": "FieldConfig",
+                        "id": 139
+                    },
+                    "id": 139,
+                    "properties": [
+                        {
+                            "name": "path",
+                            "documentation": "Path to control in the object passed to FormHelper",
+                            "type": {
+                                "kind": "Named",
+                                "name": "Array",
+                                "parameters": [
+                                    {
+                                        "kind": "Named",
+                                        "name": "string",
+                                        "id": 8
+                                    }
+                                ],
+                                "id": 140
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "component",
+                            "documentation": "Component to render, defaults to the inputComponent passed to FormHelper",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "render",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "props",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "any",
+                                            "id": 1
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Named",
+                                    "name": "ReactType",
+                                    "id": 131
+                                }
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "label",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactChild",
+                                "id": 144
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "onChange",
+                            "documentation": "Callback when then field is modified.\nIt receives the full updatedObject for all fields and may return a new object\nthat is used instead.\n\nThis is useful if you need to change more fields than the specified path.",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "updatedObject",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "any",
+                                            "id": 1
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Named",
+                                    "name": "any",
+                                    "id": 1
+                                }
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "required",
+                            "documentation": "If the field is required",
+                            "type": {
+                                "kind": "Union",
+                                "types": [
+                                    {
+                                        "kind": "BooleanLiteral"
+                                    },
+                                    {
+                                        "kind": "BooleanLiteral"
+                                    },
+                                    {
+                                        "kind": "Function",
+                                        "parameters": [
+                                            {
+                                                "name": "object",
+                                                "type": {
+                                                    "kind": "Named",
+                                                    "name": "any",
+                                                    "id": 1
+                                                }
+                                            }
+                                        ],
+                                        "returnType": {
+                                            "kind": "Named",
+                                            "name": "boolean",
+                                            "id": 12
+                                        }
+                                    }
+                                ]
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "validations",
+                            "documentation": "Specify validation messages and possibly functions\n\nExample:\n```\n{\n   [required]: {\n     text: 'The field is required',\n   },\n   number: {\n     text: 'Only numbers are allowed',\n     validation: pattern(/^[0-9]+$/),\n   },\n}\n```",
+                            "type": {
+                                "kind": "Object",
+                                "properties": [],
+                                "index": {
+                                    "name": "validationError",
+                                    "type": {
+                                        "kind": "Object",
+                                        "properties": [
+                                            {
+                                                "name": "text",
+                                                "type": {
+                                                    "kind": "Named",
+                                                    "name": "string",
+                                                    "id": 8
+                                                }
+                                            },
+                                            {
+                                                "name": "validation",
+                                                "type": {
+                                                    "kind": "Function",
+                                                    "parameters": [
+                                                        {
+                                                            "name": "value",
+                                                            "type": {
+                                                                "kind": "Named",
+                                                                "name": "any",
+                                                                "id": 1
+                                                            }
+                                                        }
+                                                    ],
+                                                    "returnType": {
+                                                        "kind": "Named",
+                                                        "name": "boolean",
+                                                        "id": 12
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "validationError",
+                            "documentation": "Error in validations to display. The text property of the corresponding\nfield in validations will be displayed. Only set this if you handle\nerrors externally.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "string",
+                                "id": 8
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "error",
+                            "documentation": "Error to display, only set this if you handle errors externally\nand does not use validations.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "string",
+                                "id": 8
+                            },
+                            "optional": true
+                        }
+                    ]
+                },
+                {
+                    "name": "Properties",
+                    "documentation": "",
+                    "type": {
+                        "kind": "Named",
+                        "name": "Properties",
+                        "parameters": [
+                            {
+                                "kind": "Named",
+                                "name": "T",
+                                "id": 152
+                            },
+                            {
+                                "kind": "Named",
+                                "name": "I",
+                                "id": 153
+                            }
+                        ],
+                        "id": 151
+                    },
+                    "id": 151,
+                    "properties": [
+                        {
+                            "name": "fields",
+                            "documentation": "Fields to show in the form\n\nExample:\n```\n[\n   {\n     path: ['username'],\n     label: 'Username',\n   }\n]\n```",
+                            "type": {
+                                "kind": "Named",
+                                "name": "Array",
+                                "parameters": [
+                                    {
+                                        "kind": "Intersection",
+                                        "types": [
+                                            {
+                                                "kind": "Named",
+                                                "name": "FieldConfig",
+                                                "id": 139
+                                            },
+                                            {
+                                                "kind": "Named",
+                                                "name": "I",
+                                                "id": 153
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "id": 155
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "value",
+                            "documentation": "The object the form will manage.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "T",
+                                "id": 152
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "onSave",
+                            "documentation": "Callback when the form is submitted, an updated object is passed as the only prop.\nIf a promise is returned the saveButton component will receive a loading prop set\nto true until the promise is resolved or rejected.",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "savedObject",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "T",
+                                            "id": 152
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Union",
+                                    "types": [
+                                        {
+                                            "kind": "Named",
+                                            "name": "void",
+                                            "id": 14
+                                        },
+                                        {
+                                            "kind": "Named",
+                                            "name": "Promise",
+                                            "parameters": [
+                                                {
+                                                    "kind": "Named",
+                                                    "name": "any",
+                                                    "id": 1
+                                                }
+                                            ],
+                                            "id": 160
+                                        }
+                                    ]
+                                }
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "onChange",
+                            "documentation": "Callback when any field in the form is modified.\nIf this property is set, the form becomes a controlled component and the value\nprop must be maintained externally.\n\nThis is useful if you nest multiple FormHelpers or need to restrict user input\nbefore it appear on the screen.",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "updatedObject",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "T",
+                                            "id": 152
+                                        }
+                                    },
+                                    {
+                                        "name": "valid",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "boolean",
+                                            "id": 12
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Named",
+                                    "name": "void",
+                                    "id": 14
+                                }
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "saveButton",
+                            "documentation": "A string or a renderd React component. This property will be passed as a child\nto the buttonComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactChild",
+                                "id": 144
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "formComponent",
+                            "documentation": "Component used for the form, defaults to a HTML form element.\n\nThis is useful to set to a div if you nest multiple FormHelpers.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "inputComponent",
+                            "documentation": "Component used for fields that has not specified a different component.\nDefaults to a HTML input element.\n\nPassed props are:\n   value: The value for the field\n   onChange: A function to be called with an updated value\n   error: A string with an error message (if any)\n   onBlur: If errorOnTouched is set, a function will be passed that should\n           be called when the field looses focus.\n\nThe component will also receive props from the field configuration that are not\npath, validations or validationError, for example label and required.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "buttonComponent",
+                            "documentation": "Button component to render the saveButton, defaults to an HTML button element.\n\nPassed props are:\n   disabled: If the button should be disabled\n   value: The current value of the form\n   loading: If the form is saving or not",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "buttonProps",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Named",
+                                "name": "Object",
+                                "id": 28
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "style",
+                            "documentation": "A style property that is passed to the formComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "CSSProperties",
+                                "id": 163
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "formId",
+                            "documentation": "An id property that is passed to the formComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "string",
+                                "id": 8
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "dirtyCheck",
+                            "documentation": "Set to true to disable the saveButton if there are no changes",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "errorOnTouched",
+                            "documentation": "Set to true to only show error messages for fields that have been touched",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "disabled",
+                            "documentation": "Set to true to disable the saveButton",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        }
+                    ]
+                }
+            ],
+            "components": [
+                {
+                    "id": 165,
+                    "name": "FormHelper",
+                    "documentation": "",
+                    "properties": [
+                        {
+                            "name": "children",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactNode",
+                                "id": 203
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "fields",
+                            "documentation": "Fields to show in the form\n\nExample:\n```\n[\n   {\n     path: ['username'],\n     label: 'Username',\n   }\n]\n```",
+                            "type": {
+                                "kind": "Named",
+                                "name": "Array",
+                                "parameters": [
+                                    {
+                                        "kind": "Intersection",
+                                        "types": [
+                                            {
+                                                "kind": "Named",
+                                                "name": "FieldConfig",
+                                                "id": 139
+                                            },
+                                            {
+                                                "kind": "Named",
+                                                "name": "I",
+                                                "id": 153
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "id": 155
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "value",
+                            "documentation": "The object the form will manage.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "T",
+                                "id": 152
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "onSave",
+                            "documentation": "Callback when the form is submitted, an updated object is passed as the only prop.\nIf a promise is returned the saveButton component will receive a loading prop set\nto true until the promise is resolved or rejected.",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "savedObject",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "T",
+                                            "id": 152
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Union",
+                                    "types": [
+                                        {
+                                            "kind": "Named",
+                                            "name": "void",
+                                            "id": 14
+                                        },
+                                        {
+                                            "kind": "Named",
+                                            "name": "Promise",
+                                            "parameters": [
+                                                {
+                                                    "kind": "Named",
+                                                    "name": "any",
+                                                    "id": 1
+                                                }
+                                            ],
+                                            "id": 160
+                                        }
+                                    ]
+                                }
+                            },
+                            "optional": false
+                        },
+                        {
+                            "name": "onChange",
+                            "documentation": "Callback when any field in the form is modified.\nIf this property is set, the form becomes a controlled component and the value\nprop must be maintained externally.\n\nThis is useful if you nest multiple FormHelpers or need to restrict user input\nbefore it appear on the screen.",
+                            "type": {
+                                "kind": "Function",
+                                "parameters": [
+                                    {
+                                        "name": "updatedObject",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "T",
+                                            "id": 152
+                                        }
+                                    },
+                                    {
+                                        "name": "valid",
+                                        "type": {
+                                            "kind": "Named",
+                                            "name": "boolean",
+                                            "id": 12
+                                        }
+                                    }
+                                ],
+                                "returnType": {
+                                    "kind": "Named",
+                                    "name": "void",
+                                    "id": 14
+                                }
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "saveButton",
+                            "documentation": "A string or a renderd React component. This property will be passed as a child\nto the buttonComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactChild",
+                                "id": 144
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "formComponent",
+                            "documentation": "Component used for the form, defaults to a HTML form element.\n\nThis is useful to set to a div if you nest multiple FormHelpers.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "inputComponent",
+                            "documentation": "Component used for fields that has not specified a different component.\nDefaults to a HTML input element.\n\nPassed props are:\n   value: The value for the field\n   onChange: A function to be called with an updated value\n   error: A string with an error message (if any)\n   onBlur: If errorOnTouched is set, a function will be passed that should\n           be called when the field looses focus.\n\nThe component will also receive props from the field configuration that are not\npath, validations or validationError, for example label and required.",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "buttonComponent",
+                            "documentation": "Button component to render the saveButton, defaults to an HTML button element.\n\nPassed props are:\n   disabled: If the button should be disabled\n   value: The current value of the form\n   loading: If the form is saving or not",
+                            "type": {
+                                "kind": "Named",
+                                "name": "ReactType",
+                                "id": 131
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "buttonProps",
+                            "documentation": "",
+                            "type": {
+                                "kind": "Named",
+                                "name": "Object",
+                                "id": 28
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "style",
+                            "documentation": "A style property that is passed to the formComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "CSSProperties",
+                                "id": 163
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "formId",
+                            "documentation": "An id property that is passed to the formComponent",
+                            "type": {
+                                "kind": "Named",
+                                "name": "string",
+                                "id": 8
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "dirtyCheck",
+                            "documentation": "Set to true to disable the saveButton if there are no changes",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "errorOnTouched",
+                            "documentation": "Set to true to only show error messages for fields that have been touched",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        },
+                        {
+                            "name": "disabled",
+                            "documentation": "Set to true to disable the saveButton",
+                            "type": {
+                                "kind": "Named",
+                                "name": "boolean",
+                                "id": 12
+                            },
+                            "optional": true
+                        }
+                    ]
+                },
+                {
+                    "id": 842,
+                    "name": "A",
+                    "documentation": "A component with a big long documentation\n\nThis text is only visible on the detail page",
+                    "properties": []
+                }
+            ]
+        },
+        "dist/src/helpers.js": {
+            "srcPath": "src/helpers.ts",
+            "outPath": "dist/src/helpers.js",
+            "types": [],
+            "components": []
+        },
+        "dist/src/helpers.test.js": {
+            "srcPath": "src/helpers.test.ts",
+            "outPath": "dist/src/helpers.test.js",
+            "types": [],
+            "components": []
+        },
+        "dist/src/index.test.js": {
+            "srcPath": "src/index.test.tsx",
+            "outPath": "dist/src/index.test.js",
+            "types": [],
+            "components": []
+        },
+        "dist/src/validation.test.js": {
+            "srcPath": "src/validation.test.ts",
+            "outPath": "dist/src/validation.test.js",
+            "types": [],
+            "components": []
+        }
+    }
+}

@@ -1,0 +1,381 @@
+import * as fs from 'fs'
+import * as glob from 'glob'
+import {join, normalize, relative} from 'path'
+import * as ts from 'typescript'
+
+export type Package = {
+  name: string
+  outDir: string
+  mainModule: string
+  declarationModule: {[typeId: string]: /** path */ string}
+  modules: {[path: string]: Module}
+}
+
+export type Module = {
+  srcPath: string
+  outPath: string
+  types: Array<TypeDeclaration>
+  components: Array<ComponentDeclaration>
+}
+
+export type DocEntry = {
+  name?: string
+  documentation?: string
+  type?: TypeBound
+}
+
+export type Declaration = DocEntry & {
+  name: string
+  id: string
+}
+
+export type TypeDeclaration = Declaration & {
+  parameters?: Array<TypeBound>
+  properties: Array<TypeProperty>
+}
+
+export type TypeProperty = DocEntry & {
+  optional: boolean
+}
+
+export type ComponentDeclaration = Declaration & {
+  properties: Array<TypeProperty>
+}
+
+export type TypeBound
+  = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id: number}
+  | {kind: 'Object', properties: Array<{name: string, type: TypeBound}>, index?: {name: string, type: TypeBound}}
+  | {kind: 'Tuple', properties: Array<TypeBound>}
+  | {kind: 'Function', typeParameters?: Array<TypeBound>, parameters: Array<{name: string, type: TypeBound}>, returnType: TypeBound}
+  | {kind: 'Intersection', types: Array<TypeBound>}
+  | {kind: 'Union', types: Array<TypeBound>}
+  | {kind: 'BooleanLiteral', value: string}
+  | {kind: 'NumberLiteral', value: string}
+  | {kind: 'StringLiteral', value: string}
+
+export function analyze(fileNames: Array<string>, analyzeResult: Package, packagePath: string, options: ts.CompilerOptions = {
+  jsx: ts.JsxEmit.Preserve,
+  target: ts.ScriptTarget.ES2017,
+  module: ts.ModuleKind.CommonJS,
+}) {
+  let program = ts.createProgram(fileNames, options)
+  let checker = program.getTypeChecker()
+
+  function outputPath(srcPath: string) {
+    const relativeSrcPath = relative(packagePath, srcPath)
+    const outPath = join(analyzeResult.outDir, relativeSrcPath)
+      .replace(/\.[jt]sx?$/, '.js')
+    return outPath
+  }
+
+  for (const sourceFile of program.getSourceFiles()) {
+    if (!fileNames.includes(sourceFile.fileName)) {
+      continue
+    }
+    const srcPath = relative(packagePath, sourceFile.fileName)
+    const outPath = outputPath(sourceFile.fileName)
+    analyzeResult.modules[outPath] = {
+      srcPath,
+      outPath,
+      types: [],
+      components: [],
+    }
+
+    ts.forEachChild(sourceFile, visit)
+  }
+
+  return analyzeResult
+
+  function visit(node: ts.Node) {
+    // Only consider exported nodes
+    if (!isNodeExported(node)) {
+      return
+    }
+
+    const outPath = outputPath(node.getSourceFile().fileName)
+    const module = analyzeResult.modules[outPath]
+
+    if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
+      const symbol = checker.getSymbolAtLocation((<ts.TypeAliasDeclaration>node).name)
+      const type = checker.getDeclaredTypeOfSymbol(symbol)
+      analyzeResult.declarationModule[type['id']] = outPath
+      module.types.push(serializeTypeDeclaration(symbol))
+    }
+    else if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+      const symbol = checker.getSymbolAtLocation((<ts.InterfaceDeclaration>node).name)
+      const type = checker.getTypeOfSymbolAtLocation(symbol, node)
+      analyzeResult.declarationModule[type['id']] = outPath
+      module.types.push(serializeTypeDeclaration(symbol))
+    }
+    else if (node.kind === ts.SyntaxKind.ClassDeclaration) {
+      const name = (<ts.ClassDeclaration>node).name
+      if (!name) return
+      const symbol = checker.getSymbolAtLocation(name)
+      if (!symbol.valueDeclaration) return
+      const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
+      const constructSignature = type.getConstructSignatures()[0]
+      if (!constructSignature) return
+      const instanceType = constructSignature.getReturnType()
+      const props = instanceType.getProperty('props')
+      const render = instanceType.getProperty('render')
+      if (!props || !render) return
+      if (!props.valueDeclaration) return
+      const propsType = checker.getTypeOfSymbolAtLocation(props, props.valueDeclaration)
+      if (!render.valueDeclaration) return
+      const renderType = checker.getTypeOfSymbolAtLocation(render, render.valueDeclaration)
+      const callSignature = renderType.getCallSignatures()[0]
+      if (!callSignature) return
+      if (callSignature.parameters.length !== 0) return
+      if (!isJsxType(callSignature.getReturnType().symbol)) return
+
+      const properties = serializeType(propsType)
+      analyzeResult.declarationModule[instanceType['id']] = outPath
+      module.components.push({
+        id: instanceType['id'],
+        name: name.text,
+        documentation: getDocs(symbol),
+        properties,
+      })
+    }
+    else if (node.kind === ts.SyntaxKind.VariableStatement) {
+      (<ts.VariableStatement>node).declarationList.declarations.forEach(d => {
+        if (d.name.kind !== ts.SyntaxKind.Identifier) return
+        const symbol = checker.getSymbolAtLocation(d.name)
+        if (!symbol.valueDeclaration) return
+        const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
+        const callSignature = type.getCallSignatures()[0]
+        if (!callSignature) return
+        if (callSignature.parameters.length > 2) return
+        if (!isJsxType(callSignature.getReturnType().symbol)) return
+        const propsParameter = callSignature.parameters[0]
+        const propsType = propsParameter && (
+          propsParameter.valueDeclaration
+            ? checker.getTypeOfSymbolAtLocation(propsParameter, propsParameter.valueDeclaration)
+            : checker.getDeclaredTypeOfSymbol(propsParameter)
+        )
+
+        const properties = propsParameter
+          ? serializeType(propsType)
+          : []
+
+        analyzeResult.declarationModule[type['id']] = outPath
+        module.components.push({
+          id: type['id'],
+          name: d.name.text,
+          documentation: getDocs(symbol),
+          properties,
+        })
+      })
+    }
+  }
+
+  function getDocs(symbol: ts.Symbol) {
+    return ts.displayPartsToString(symbol.getDocumentationComment())
+  }
+
+  function serializeType(type: ts.Type): Array<TypeProperty> {
+    console.error('serializeType', type['id'])
+    if (type['types']) {
+      return serializeInsersectionType(type as ts.UnionOrIntersectionType)
+    }
+    if (type.aliasSymbol && type.aliasTypeArguments && type.aliasSymbol.getName() === 'Readonly') {
+      const aliasSymbol = type.aliasTypeArguments[0].aliasSymbol
+      if (aliasSymbol) {
+        return serializeType(checker.getDeclaredTypeOfSymbol(aliasSymbol))
+      }
+      else {
+        return serializeType(type.aliasTypeArguments[0])
+      }
+    }
+
+    return type.getProperties().map(p => {
+      const property = serializeSymbol(p) as TypeProperty
+      const valueDeclaration = p.valueDeclaration as ts.PropertySignature
+      property.optional = !!(valueDeclaration && valueDeclaration.questionToken)
+      return property
+    })
+  }
+
+  function serializeInsersectionType(type: ts.UnionOrIntersectionType) {
+    return type.types.reduce((a, t) => [...a, ...serializeType(t)], [] as Array<TypeProperty>)
+  }
+
+  function serializeSymbol(symbol: ts.Symbol, atLocation = symbol.valueDeclaration): DocEntry {
+    return {
+      name: symbol.getName(),
+      documentation: getDocs(symbol),
+      type: serializeTypeBound(
+        atLocation
+          ? checker.getTypeOfSymbolAtLocation(symbol, atLocation)
+          : checker.getDeclaredTypeOfSymbol(symbol)
+      ),
+    }
+  }
+
+  function serializeNamedTypeBound(type: ts.Type): TypeBound {
+    const typeArguments = type.aliasTypeArguments || (type as ts.TypeReference).typeArguments
+
+    return {
+      kind: 'Named',
+      name: checker
+        .typeToString(type, undefined, ts.TypeFormatFlags.WriteArrayAsGenericType)
+        .split('<')[0],
+      parameters: typeArguments && typeArguments.map(serializeTypeBound),
+      id: type['id'],
+    }
+  }
+
+  function serializeTypeBound(type: ts.Type): TypeBound {
+    if (type.aliasSymbol) {
+      return serializeNamedTypeBound(type)
+    }
+    if (type.flags & ts.TypeFlags.Object) {
+      let type_ = type as ts.ObjectType
+      if (type_.objectFlags & ts.ObjectFlags.ObjectLiteral) {
+        console.error('object', type)
+        console.error('object', checker.typeToString(type))
+        // return {
+        //   kind: 'Object',
+        //   properties: (type as ts.Object).types.map(serializeTypeBound),
+        // }
+      } else if (type_.objectFlags & ts.ObjectFlags.Anonymous) {
+        const callSignatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call)
+
+        if (callSignatures && callSignatures[0]) {
+          const signature = callSignatures[0] as ts.Signature
+
+          return {
+            kind: 'Function',
+            typeParameters: signature.typeParameters && signature.typeParameters.map(serializeTypeBound),
+            parameters: signature.parameters.map(parameter => ({
+              name: parameter.name,
+              type: serializeTypeBound(
+                parameter.valueDeclaration
+                  ? checker.getTypeOfSymbolAtLocation(parameter, parameter.valueDeclaration)
+                  : checker.getDeclaredTypeOfSymbol(parameter)
+              ),
+            })),
+            returnType: serializeTypeBound(signature['resolvedReturnType']),
+          }
+        } else {
+          const index = type.getStringIndexType()
+          const indexName = type['stringIndexInfo'] && Object.keys(type['stringIndexInfo'].declaration.symbol.declarations[0].locals)[0]
+          return {
+            kind: 'Object',
+            properties: type.getProperties().map(property => ({
+              name: property.name,
+              type: serializeTypeBound(
+                property.valueDeclaration
+                  ? checker.getTypeOfSymbolAtLocation(property, property.valueDeclaration)
+                  : checker.getDeclaredTypeOfSymbol(property)
+              ),
+            })),
+            index: index && {name: indexName, type: serializeTypeBound(index)},
+          }
+        }
+      } else if (type_.objectFlags & ts.ObjectFlags.Interface) {
+      } else if (type_.objectFlags & ts.ObjectFlags.Reference) {
+      } else {
+        console.error('else', type)
+        console.error('else', checker.typeToString(type))
+      }
+    }
+    if (type.flags & ts.TypeFlags.Intersection) {
+      return {
+        kind: 'Intersection',
+        types: (type as ts.UnionOrIntersectionType).types.map(serializeTypeBound),
+      }
+    }
+    if (type.flags & ts.TypeFlags.Union && !(type.flags & ts.TypeFlags.Boolean)) {
+      return {
+        kind: 'Union',
+        types: (type as ts.UnionOrIntersectionType).types.map(serializeTypeBound),
+      }
+    }
+    if (type.flags & ts.TypeFlags.BooleanLiteral) {
+      return {
+        kind: 'BooleanLiteral',
+        value: (type as ts.LiteralType).text,
+      }
+    }
+    if (type.flags & ts.TypeFlags.NumberLiteral) {
+      return {
+        kind: 'NumberLiteral',
+        value: (type as ts.LiteralType).text,
+      }
+    }
+    if (type.flags & ts.TypeFlags.StringLiteral) {
+      return {
+        kind: 'StringLiteral',
+        value: (type as ts.LiteralType).text,
+      }
+    }
+    return serializeNamedTypeBound(type)
+  }
+
+  function serializeTypeDeclaration(symbol: ts.Symbol) {
+    const details = serializeSymbol(symbol) as TypeDeclaration
+    console.error('symbol', checker.getDeclaredTypeOfSymbol(symbol)['id'])
+
+    let type = checker.getDeclaredTypeOfSymbol(symbol)
+    details.id = type['id']
+    const properties = type.getProperties()
+    details.properties = properties.map(p => {
+      const property = serializeSymbol(p) as TypeProperty
+      property.optional = !!(p.valueDeclaration as ts.PropertySignature).questionToken
+      return property
+    })
+    return details
+  }
+
+  /** True if this is visible outside this file, false otherwise */
+  function isNodeExported(node: ts.Node): boolean {
+    return !!(
+      (node.flags & ts.NodeFlags.ExportContext) !== 0 ||
+      (node.parent && node.parent.kind === ts.SyntaxKind.SourceFile)
+    )
+  }
+
+  function isJsxType(symbol?: ts.Symbol): boolean {
+    if (!symbol) return false
+    return checker.getFullyQualifiedName(symbol) === 'global.JSX.Element'
+  }
+}
+
+export function analyzePackage(packagePath: string): Package {
+  const packageJsonPath = join(packagePath, 'package.json')
+  const tsconfigJsonPath = join(packagePath, 'tsconfig.json')
+  if (!fs.existsSync(packageJsonPath) || !fs.existsSync(tsconfigJsonPath)) {
+    throw 'The package folder does not contain package.json and tsconfig.json files'
+  }
+
+  const packageJson = require(packageJsonPath)
+  const tsconfigJson = require(tsconfigJsonPath)
+  const compilerOptions = tsconfigJson.compilerOptions as ts.CompilerOptions
+
+  if (!packageJson.main) {
+    throw 'The package.json must specify an main module'
+  }
+
+  if (!compilerOptions.outDir) {
+    throw 'The tsconfig.json must specify an outDir'
+  }
+
+  const analyzeResult: Package = {
+    name: packageJson.name,
+    mainModule: normalize(packageJson.main),
+    outDir: compilerOptions.outDir,
+    declarationModule: {},
+    modules: {},
+  }
+
+  const filePaths = glob.sync('src/**/*.{ts,tsx}', {
+    cwd: packagePath,
+    root: packagePath,
+    realpath: true,
+  })
+
+  analyze(filePaths, analyzeResult, packagePath)
+
+  return analyzeResult
+}

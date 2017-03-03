@@ -1,5 +1,8 @@
-import {dirname, normalize} from 'path'
-import slug from 'slug'
+// import slug from 'slug'
+import {Module as AnalyzerModule, Package as AnalyzerPackage} from 'documittu-analyzer-ts/src/index'
+import {basename, dirname, join, normalize} from 'path'
+
+function slug(a) {return a.replace(/[^a-zA-Z0-9-]/, '-').replace(/--/, '-')}
 
 export function createUrl(attributes, path) {
   if (attributes.path) return attributes.path
@@ -13,6 +16,9 @@ export function createUrl(attributes, path) {
   return path
 }
 
+export type Module = AnalyzerModule & {url: string, typeUrls: {[typeId: string]: string}}
+export type Package = AnalyzerPackage & {modules: {[path: string]: Module}}
+
 export type Page = {
   url: string
   title: string
@@ -20,19 +26,54 @@ export type Page = {
   component: React.ReactType
 }
 
-export type FolderPage = {
+export type FolderPageConfig = {
   url: string
   title: string
   subPages: Array<Page>
   redirectTo?: string
 }
 
+export type ModulePageConfig = {
+  url: string
+  title: string
+  module: Module
+  apiData: Package
+  modules: Array<DocPage>
+}
+
+export type ModuleFolderConfig = {
+  url: string
+  modules: Array<DocPage>
+}
+
 export type TopLevel
-  = ({kind: 'folder'} & FolderPage)
+  = ({kind: 'folder'} & FolderPageConfig)
   | ({kind: 'page'} & Page)
   | ({kind: 'redirect', url: string, title: undefined, to: string})
+  | ({kind: 'module'} & ModulePageConfig)
 
-export function buildRoutes(pages) {
+export type DocPage
+  = ({kind: 'module'} & ModulePageConfig)
+  // | {kind: 'folder' & ModuleFolderConfig}
+
+export function buildRoutes(pages, apiData: AnalyzerPackage) {
+  let routes
+
+  if (pages) {
+    routes = buildPageRoutes(pages)
+  }
+  else if (apiData) {
+    const context = apiData as Package
+    routes = buildApiDataRoutes(context)
+  }
+  else {
+    throw 'Neither pages nor apiData was provided'
+  }
+
+  return routes
+}
+
+function buildPageRoutes(pages) {
   const routes = [] as Array<TopLevel>
   const subRoutes = {} as {[folder: string]: Array<Page>}
   const subRoutesWithoutIndex = {} as {[folder: string]: true}
@@ -98,4 +139,45 @@ export function buildRoutes(pages) {
   }
 
   return routes
+}
+
+function buildApiDataRoutes(apiData: Package): TopLevel {
+  const modules = [] as Array<DocPage>
+  let rootModule: DocPage | undefined
+
+  Object.values(apiData.modules)
+    .forEach((module: Module) => {
+      if (!module.components.length && !module.types.length) return
+
+      const url = apiData.mainModule === module.outPath ? '/' : join('/', module.outPath)
+      const title = apiData.mainModule === module.outPath
+        ? apiData.name
+        : basename(module.outPath).replace(/\.js$/, '')
+
+      module.typeUrls = {}
+      module.types.forEach(type => {
+        module.typeUrls[type.id] = join(url, 'type', type.name!)
+      })
+
+      const modulePage: DocPage = {
+        kind: 'module',
+        title,
+        url,
+        module,
+        apiData,
+        modules: [],
+      }
+
+      if (url === '/') {
+        modulePage.modules = modules
+        rootModule = modulePage
+      } else {
+        modules.push(modulePage)
+      }
+    })
+
+  if (rootModule) {
+    return [rootModule]
+  }
+  throw 'No module with main'
 }

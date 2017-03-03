@@ -1,10 +1,10 @@
 ---
 title: test
 imports:
-  '{SideMenuLayout}': 'documittu'
+  '{SideMenuLayout}': 'documittu-template-beanloop'
 ---
 
-```render
+```render jsx
 <SideMenuLayout />
 ```
 asd

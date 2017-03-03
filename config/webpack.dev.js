@@ -14,8 +14,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
 const WatchMissingNodeModulesPlugin = require('react-dev-utils/WatchMissingNodeModulesPlugin');
+const AnalyzerPlugin = require('./analyzer-plugin')
 const paths = require('./paths')
 const getClientEnvironment = require('react-scripts/config/env');
+const VirtualModulePlugin = require('virtual-module-webpack-plugin');
 
 // @remove-on-eject-begin
 // `path` is not used after eject - see https://github.com/facebookincubator/create-react-app/issues/1174
@@ -136,6 +138,7 @@ module.exports = {
       {
         test: /\.(js|jsx)$/,
         include: [paths.appDocs, paths.template],
+        exclude: /node_modules/,
         loader: 'babel-loader',
         options: {
           babelrc: false,
@@ -150,6 +153,7 @@ module.exports = {
       {
         test: /\.(ts|tsx)$/,
         include: [paths.appDocs, paths.template],
+        exclude: /node_modules/,
         use: [
           {
             loader: 'babel-loader',
@@ -162,7 +166,12 @@ module.exports = {
               cacheDirectory: true
             }
           },
-          'ts-loader'
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true
+            }
+          }
         ]
       },
       // "postcss" loader applies autoprefixer to our CSS.
@@ -286,6 +295,11 @@ module.exports = {
     // makes the discovery automatic so you don't have to restart.
     // See https://github.com/facebookincubator/create-react-app/issues/186
     new WatchMissingNodeModulesPlugin(paths.appNodeModules),
+    // new VirtualModulePlugin({
+    //   contents: 'module.exports.apiData = {name: "Jesper!!!!"}',
+    //   path: paths.template + '/src/$analyze-result.js'
+    // })
+    // new AnalyzerPlugin(),
   ],
   // Some libraries import Node modules but don't use them in the browser.
   // Tell Webpack to provide empty mocks for them so importing them works.
