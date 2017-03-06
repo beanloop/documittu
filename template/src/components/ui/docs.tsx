@@ -40,10 +40,10 @@ export const PropertyName = styled.span`
 `
 
 const Keyword = styled.span`
-  color: ${materialColors['purple-500']};
+  color: ${materialColors['purple-700']};
 `
 const StringLiteral = styled.span`
-  color: ${materialColors['green-500']};
+  color: ${materialColors['green-700']};
 `
 
 export const Property = ({prop, showOptional, context}: {prop: TypeProperty, showOptional?: boolean, context: Package}) =>

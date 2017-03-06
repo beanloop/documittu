@@ -16,6 +16,8 @@ export type Module = {
   outPath: string
   types: Array<TypeDeclaration>
   components: Array<ComponentDeclaration>
+  functions: Array<FunctionDeclaration>
+  variables: Array<VariableDeclaration>
 }
 
 export type DocEntry = {
@@ -36,14 +38,26 @@ export type TypeDeclaration = Declaration & {
 
 export type TypeProperty = DocEntry & {
   optional: boolean
+  defaultValue?: string
 }
 
 export type ComponentDeclaration = Declaration & {
   properties: Array<TypeProperty>
 }
 
+export type FunctionDeclaration = Declaration & {
+  typeParameters?: Array<TypeBound>
+  parameters: Array<TypeProperty>
+  returnType: TypeBound
+}
+
+export type VariableDeclaration = Declaration & {
+  type: TypeBound
+  value: string
+}
+
 export type TypeBound
-  = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id: number}
+  = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id: any}
   | {kind: 'Object', properties: Array<{name: string, type: TypeBound}>, index?: {name: string, type: TypeBound}}
   | {kind: 'Tuple', properties: Array<TypeBound>}
   | {kind: 'Function', typeParameters?: Array<TypeBound>, parameters: Array<{name: string, type: TypeBound}>, returnType: TypeBound}
@@ -79,6 +93,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       outPath,
       types: [],
       components: [],
+      functions: [],
+      variables: [],
     }
 
     ts.forEachChild(sourceFile, visit)
@@ -113,29 +129,21 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       const symbol = checker.getSymbolAtLocation(name)
       if (!symbol.valueDeclaration) return
       const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
-      const constructSignature = type.getConstructSignatures()[0]
-      if (!constructSignature) return
-      const instanceType = constructSignature.getReturnType()
-      const props = instanceType.getProperty('props')
-      const render = instanceType.getProperty('render')
-      if (!props || !render) return
-      if (!props.valueDeclaration) return
-      const propsType = checker.getTypeOfSymbolAtLocation(props, props.valueDeclaration)
-      if (!render.valueDeclaration) return
-      const renderType = checker.getTypeOfSymbolAtLocation(render, render.valueDeclaration)
-      const callSignature = renderType.getCallSignatures()[0]
-      if (!callSignature) return
-      if (callSignature.parameters.length !== 0) return
-      if (!isJsxType(callSignature.getReturnType().symbol)) return
+      const properties = getPropsType(type)
 
-      const properties = serializeType(propsType)
-      analyzeResult.declarationModule[instanceType['id']] = outPath
-      module.components.push({
-        id: instanceType['id'],
-        name: name.text,
-        documentation: getDocs(symbol),
-        properties,
-      })
+      if (properties) {
+        analyzeResult.declarationModule[type['id']] = outPath
+        module.components.push({
+          id: type['id'],
+          name: name.text,
+          documentation: getDocs(symbol),
+          properties,
+        })
+      }
+      // It's not a component
+      else {
+
+      }
     }
     else if (node.kind === ts.SyntaxKind.VariableStatement) {
       (<ts.VariableStatement>node).declarationList.declarations.forEach(d => {
@@ -143,34 +151,53 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
         const symbol = checker.getSymbolAtLocation(d.name)
         if (!symbol.valueDeclaration) return
         const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
-        const callSignature = type.getCallSignatures()[0]
-        if (!callSignature) return
-        if (callSignature.parameters.length > 2) return
-        if (!isJsxType(callSignature.getReturnType().symbol)) return
-        const propsParameter = callSignature.parameters[0]
-        const propsType = propsParameter && (
-          propsParameter.valueDeclaration
-            ? checker.getTypeOfSymbolAtLocation(propsParameter, propsParameter.valueDeclaration)
-            : checker.getDeclaredTypeOfSymbol(propsParameter)
-        )
+        const properties = getPropsType(type)
 
-        const properties = propsParameter
-          ? serializeType(propsType)
-          : []
-
-        analyzeResult.declarationModule[type['id']] = outPath
-        module.components.push({
-          id: type['id'],
-          name: d.name.text,
-          documentation: getDocs(symbol),
-          properties,
-        })
+        if (properties) {
+          analyzeResult.declarationModule[type['id']] = outPath
+          module.components.push({
+            id: type['id'],
+            name: d.name.text,
+            documentation: getDocs(symbol),
+            properties,
+          })
+        }
+        // It's not a component
+        else {
+          if (isFunctionType(type)) {
+            module.functions.push({
+              id: type['id'],
+              name: d.name.text,
+              documentation: getDocs(symbol),
+              ...serializeFunction(type),
+            })
+          }
+          else if (symbol.valueDeclaration && symbol.valueDeclaration['initializer']) {
+            const declaration = symbol.valueDeclaration as ts.VariableDeclaration
+            module.variables.push({
+              id: type['id'],
+              name: d.name.text,
+              documentation: getDocs(symbol),
+              type: serializeTypeBound(type),
+              value: declaration.initializer!.getText(),
+            })
+          }
+        }
       })
     }
   }
 
   function getDocs(symbol: ts.Symbol) {
     return ts.displayPartsToString(symbol.getDocumentationComment())
+  }
+
+  function serializeFunction(type: ts.Type) {
+    const callSignature = type.getCallSignatures()[0]
+
+    return {
+      parameters: callSignature.getParameters().map(serializeTypeProperty),
+      returnType: serializeTypeBound(callSignature.getReturnType()),
+    }
   }
 
   function serializeType(type: ts.Type): Array<TypeProperty> {
@@ -188,12 +215,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       }
     }
 
-    return type.getProperties().map(p => {
-      const property = serializeSymbol(p) as TypeProperty
-      const valueDeclaration = p.valueDeclaration as ts.PropertySignature
-      property.optional = !!(valueDeclaration && valueDeclaration.questionToken)
-      return property
-    })
+    return type.getProperties().map(serializeTypeProperty)
   }
 
   function serializeInsersectionType(type: ts.UnionOrIntersectionType) {
@@ -210,6 +232,13 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
           : checker.getDeclaredTypeOfSymbol(symbol)
       ),
     }
+  }
+
+  function serializeTypeProperty(symbol: ts.Symbol) {
+    const property = serializeSymbol(symbol) as TypeProperty
+    const valueDeclaration = symbol.valueDeclaration as ts.PropertySignature
+    property.optional = !!(valueDeclaration && valueDeclaration.questionToken)
+    return property
   }
 
   function serializeNamedTypeBound(type: ts.Type): TypeBound {
@@ -255,7 +284,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
                   : checker.getDeclaredTypeOfSymbol(parameter)
               ),
             })),
-            returnType: serializeTypeBound(signature['resolvedReturnType']),
+            returnType: serializeTypeBound(signature.getReturnType()),
           }
         } else {
           const index = type.getStringIndexType()
@@ -320,11 +349,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     let type = checker.getDeclaredTypeOfSymbol(symbol)
     details.id = type['id']
     const properties = type.getProperties()
-    details.properties = properties.map(p => {
-      const property = serializeSymbol(p) as TypeProperty
-      property.optional = !!(p.valueDeclaration as ts.PropertySignature).questionToken
-      return property
-    })
+    details.properties = properties.map(serializeTypeProperty)
     return details
   }
 
@@ -334,6 +359,52 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       (node.flags & ts.NodeFlags.ExportContext) !== 0 ||
       (node.parent && node.parent.kind === ts.SyntaxKind.SourceFile)
     )
+  }
+
+  function getPropsType(type: ts.Type): Array<TypeProperty>|undefined {
+    return getClassComponentPropsType(type) || getFunctionComponentPropsType(type)
+  }
+
+  function getClassComponentPropsType(type: ts.Type): Array<TypeProperty>|undefined {
+    const constructSignature = type.getConstructSignatures()[0]
+    if (!constructSignature) return
+    const instanceType = constructSignature.getReturnType()
+    const props = instanceType.getProperty('props')
+    const render = instanceType.getProperty('render')
+    if (!props || !render) return
+    if (!props.valueDeclaration) return
+    if (!render.valueDeclaration) return
+    const renderType = checker.getTypeOfSymbolAtLocation(render, render.valueDeclaration)
+    const callSignature = renderType.getCallSignatures()[0]
+    if (!callSignature) return
+    if (callSignature.parameters.length !== 0) return
+    if (!isJsxType(callSignature.getReturnType().symbol)) return
+
+    const propsType = checker.getTypeOfSymbolAtLocation(props, props.valueDeclaration)
+
+    if (!propsType) return
+    return serializeType(propsType)
+  }
+
+  function getFunctionComponentPropsType(type: ts.Type): Array<TypeProperty>|undefined {
+    const callSignature = type.getCallSignatures()[0]
+    if (!callSignature) return
+    if (callSignature.parameters.length > 2) return
+    if (!isJsxType(callSignature.getReturnType().symbol)) return
+    const propsParameter = callSignature.parameters[0]
+    const propsType = propsParameter && (
+      propsParameter.valueDeclaration
+        ? checker.getTypeOfSymbolAtLocation(propsParameter, propsParameter.valueDeclaration)
+        : checker.getDeclaredTypeOfSymbol(propsParameter)
+    )
+
+    return propsType
+      ? serializeType(propsType)
+      : []
+  }
+
+  function isFunctionType(type: ts.Type) {
+    return !!type.getCallSignatures()[0]
   }
 
   function isJsxType(symbol?: ts.Symbol): boolean {

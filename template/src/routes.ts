@@ -145,18 +145,20 @@ function buildApiDataRoutes(apiData: Package): TopLevel {
   const modules = [] as Array<DocPage>
   let rootModule: DocPage | undefined
 
+  console.log('apiData.mainModule', apiData.mainModule)
   Object.values(apiData.modules)
     .forEach((module: Module) => {
-      if (!module.components.length && !module.types.length) return
-
       const url = apiData.mainModule === module.outPath ? '/' : join('/', module.outPath)
+      if (!module.components.length && !module.types.length && url !== '/') return
+
+      console.log('module.outPath', module.outPath)
       const title = apiData.mainModule === module.outPath
         ? apiData.name
         : basename(module.outPath).replace(/\.js$/, '')
 
       module.typeUrls = {}
       module.types.forEach(type => {
-        module.typeUrls[type.id] = join(url, 'type', type.name!)
+        module.typeUrls[type.id] = join(url, `type.${type.name}`)
       })
 
       const modulePage: DocPage = {
