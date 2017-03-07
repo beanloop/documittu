@@ -13,6 +13,7 @@ export const Container = styled(Row)`
 export const Nav = styled.nav`
   flex-shrink: 0;
   box-sizing: border-box;
+  padding-right: 8px;
   width: 190px;
   border-right: 1px solid rgba(0, 0, 0, 0.30);
 

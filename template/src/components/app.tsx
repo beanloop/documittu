@@ -49,23 +49,28 @@ const Main = styled.main`
     }
   }
   h1 {
-    font-size: 56px;
-  }
-  h2 {
     font-size: 45px;
   }
-  h3 {
+  h2 {
     font-size: 34px;
   }
-  h4 {
+  h3 {
     font-size: 24px;
   }
-  h5 {
+  h4 {
     font-size: 20px;
     font-weight: 500;
   }
-  h6 {
+  h5 {
     font-size: 16px;
+  }
+  h6 {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  ul {
+    padding-left: 32px;
   }
 
   p {

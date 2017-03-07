@@ -10,23 +10,25 @@ const TypeName = styled.span`
 `
 
 const BooleanLiteral = styled.span`
-  color: ${materialColors['purple-500']};
+  color: ${materialColors['purple-700']};
 `
 const NumberLiteral = styled.span`
-  color: ${materialColors['blue-500']};
+  color: ${materialColors['blue-700']};
 `
 const StringLiteral = styled.span`
-  color: ${materialColors['green-500']};
+  color: ${materialColors['green-700']};
 `
 
-function joined(delimiter: string, fn) {
+export function joined(delimiter: string, fn) {
   return (e, i) => i === 0
     ? fn(e)
-    : <span>{delimiter}{fn(e)}</span>
+    : <span key={i}>{delimiter}{fn(e)}</span>
 }
 
 function typeUrl(context: Package, type: {id: any}) {
-  return context.modules[context.declarationModule[type.id]].typeUrls[type.id]
+  return context.declarationModule[type.id] &&
+         context.modules[context.declarationModule[type.id]].typeUrls &&
+         context.modules[context.declarationModule[type.id]].typeUrls[type.id]
 }
 
 export const Type = ({type, context}: {type: TypeBound, context: Package}): React.ReactElement<any> => {
@@ -34,7 +36,7 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
     case 'Named':
       return (
         <span>
-          {context.declarationModule[type.id]
+          {typeUrl(context, type)
             ? <Link to={typeUrl(context, type)}><TypeName>{type.name}</TypeName></Link>
             : <TypeName>{type.name}</TypeName>
           }
@@ -46,6 +48,10 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
         <span>
           {'{'}
           {type.properties.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={context} /></span>))}
+          {type.index && <span>{type.properties.length > 0 && ', '}
+            {'['}{type.index.name}: <TypeName>string</TypeName>{']: '}
+            <Type type={type.index.type} context={context} />
+          </span>}
           {'}'}
         </span>
     )
@@ -90,6 +96,6 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
 export const TypeParameters = ({parameters, context}: {parameters: Array<TypeBound>, context: Package}) =>
   <span>
     {'<'}
-    {parameters.map((p, i) => <Type key={i} type={p} context={context} />)}
+    {parameters.map(joined(', ', p => <Type type={p} context={context} />))}
     {'>'}
   </span>

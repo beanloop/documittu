@@ -20,8 +20,7 @@
     "src/**/*",
     "typings/**/*"
   ],
-  "exclude": [],
-  "compileOnSave": false,
-  "buildOnSave": false,
-  "atom": { "rewriteTsconfig": false }
+  "exclude": [
+    "node_modules/**/*"
+  ]
 }

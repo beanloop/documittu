@@ -1,14 +1,15 @@
 import * as fs from 'fs'
 import * as glob from 'glob'
-import {join, normalize, relative} from 'path'
+import {dirname, join, normalize, relative} from 'path'
 import * as ts from 'typescript'
 
 export type Package = {
   name: string
   outDir: string
-  mainModule: string
+  mainModule?: string
   declarationModule: {[typeId: string]: /** path */ string}
   modules: {[path: string]: Module}
+  readmes: {[path: string]: string}
 }
 
 export type Module = {
@@ -16,6 +17,7 @@ export type Module = {
   outPath: string
   types: Array<TypeDeclaration>
   components: Array<ComponentDeclaration>
+  classes: Array<ClassDeclaration>
   functions: Array<FunctionDeclaration>
   variables: Array<VariableDeclaration>
 }
@@ -24,6 +26,13 @@ export type DocEntry = {
   name?: string
   documentation?: string
   type?: TypeBound
+}
+
+export type FunctionDocEntry = DocEntry & {
+  name: string
+  typeParameters?: Array<TypeBound>
+  parameters: Array<TypeProperty>
+  returnType: TypeBound
 }
 
 export type Declaration = DocEntry & {
@@ -45,11 +54,13 @@ export type ComponentDeclaration = Declaration & {
   properties: Array<TypeProperty>
 }
 
-export type FunctionDeclaration = Declaration & {
-  typeParameters?: Array<TypeBound>
-  parameters: Array<TypeProperty>
-  returnType: TypeBound
+export type ClassDeclaration = Declaration & {
+  properties: Array<DocEntry>
+  constructors: Array<{parameters: Array<TypeProperty>} & DocEntry>
+  methods: Array<FunctionDocEntry>
 }
+
+export type FunctionDeclaration = Declaration & FunctionDocEntry
 
 export type VariableDeclaration = Declaration & {
   type: TypeBound
@@ -85,6 +96,10 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
   for (const sourceFile of program.getSourceFiles()) {
     if (!fileNames.includes(sourceFile.fileName)) {
       continue
+    const relativeSrcPath = relative(packagePath, srcPath)
+    const outPath = join(analyzeResult.outDir, relativeSrcPath)
+      .replace(/\.[jt]sx?$/, '.js')
+    return outPath
     }
     const srcPath = relative(packagePath, sourceFile.fileName)
     const outPath = outputPath(sourceFile.fileName)
@@ -93,6 +108,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       outPath,
       types: [],
       components: [],
+      classes: [],
       functions: [],
       variables: [],
     }
@@ -131,8 +147,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
       const properties = getPropsType(type)
 
+      analyzeResult.declarationModule[type['id']] = outPath
       if (properties) {
-        analyzeResult.declarationModule[type['id']] = outPath
         module.components.push({
           id: type['id'],
           name: name.text,
@@ -142,8 +158,30 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       }
       // It's not a component
       else {
-
+        module.classes.push({
+          id: type['id'],
+          name: name.text,
+          documentation: getDocs(symbol),
+          ...serializeClass(type)
+        })
       }
+    }
+    else if (node.kind === ts.SyntaxKind.FunctionDeclaration) {
+      const fn = node as ts.FunctionDeclaration
+      if (!fn.name) return
+      if (!fn.type) return
+
+      const symbol = checker.getSymbolAtLocation(fn.name)
+      if (!symbol.valueDeclaration) return
+      const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
+
+      analyzeResult.declarationModule[type['id']] = outPath
+      module.functions.push({
+        id: type['id'],
+        name: fn.name.text,
+        documentation: getDocs(symbol),
+        ...serializeFunction(type),
+      })
     }
     else if (node.kind === ts.SyntaxKind.VariableStatement) {
       (<ts.VariableStatement>node).declarationList.declarations.forEach(d => {
@@ -153,8 +191,9 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
         const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
         const properties = getPropsType(type)
 
+        analyzeResult.declarationModule[type['id']] = outPath
         if (properties) {
-          analyzeResult.declarationModule[type['id']] = outPath
+          // analyzeResult.declarationModule[type['id']] = outPath
           module.components.push({
             id: type['id'],
             name: d.name.text,
@@ -191,10 +230,41 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     return ts.displayPartsToString(symbol.getDocumentationComment())
   }
 
-  function serializeFunction(type: ts.Type) {
-    const callSignature = type.getCallSignatures()[0]
+  function serializeClass(type: ts.Type) {
+    const constructSignature = type.getConstructSignatures()[0]
+    if (!constructSignature) return
+    const instanceType = constructSignature.getReturnType()
+
+    const properties = [] as Array<DocEntry>
+    const methods = [] as Array<FunctionDocEntry>
+
+    instanceType.getProperties().forEach(p => {
+      const type = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration!)
+      if (isFunctionType(type)) {
+        methods.push({
+          name: p.getName(),
+          documentation: getDocs(p),
+          ...serializeFunction(type),
+        })
+      }
+      else {
+        properties.push(serializeSymbol(p))
+      }
+    })
 
     return {
+      constructors: [],
+      properties,
+      methods,
+    }
+  }
+
+  function serializeFunction(type: ts.Type) {
+    const callSignature = type.getCallSignatures()[0]
+    const typeParameters = callSignature.getTypeParameters()
+
+    return {
+      typeParameters: typeParameters && typeParameters.map(serializeTypeBound),
       parameters: callSignature.getParameters().map(serializeTypeProperty),
       returnType: serializeTypeBound(callSignature.getReturnType()),
     }
@@ -243,6 +313,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
 
   function serializeNamedTypeBound(type: ts.Type): TypeBound {
     const typeArguments = type.aliasTypeArguments || (type as ts.TypeReference).typeArguments
+    const aliasType = type.aliasSymbol && checker.getDeclaredTypeOfSymbol(type.aliasSymbol) || type
 
     return {
       kind: 'Named',
@@ -250,7 +321,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
         .typeToString(type, undefined, ts.TypeFormatFlags.WriteArrayAsGenericType)
         .split('<')[0],
       parameters: typeArguments && typeArguments.map(serializeTypeBound),
-      id: type['id'],
+      id: aliasType['id'],
     }
   }
 
@@ -288,7 +359,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
           }
         } else {
           const index = type.getStringIndexType()
-          const indexName = type['stringIndexInfo'] && Object.keys(type['stringIndexInfo'].declaration.symbol.declarations[0].locals)[0]
+          const indexName = type['stringIndexInfo'] && type['stringIndexInfo'].declaration &&
+            Object.keys(type['stringIndexInfo'].declaration.symbol.declarations[0].locals)[0]
           return {
             kind: 'Object',
             properties: type.getProperties().map(property => ({
@@ -424,20 +496,17 @@ export function analyzePackage(packagePath: string): Package {
   const tsconfigJson = require(tsconfigJsonPath)
   const compilerOptions = tsconfigJson.compilerOptions as ts.CompilerOptions
 
-  if (!packageJson.main) {
-    throw 'The package.json must specify an main module'
-  }
-
   if (!compilerOptions.outDir) {
     throw 'The tsconfig.json must specify an outDir'
   }
 
   const analyzeResult: Package = {
     name: packageJson.name,
-    mainModule: normalize(packageJson.main),
+    mainModule: packageJson.main && normalize(packageJson.main),
     outDir: compilerOptions.outDir,
     declarationModule: {},
     modules: {},
+    readmes: {},
   }
 
   const filePaths = glob.sync('src/**/*.{ts,tsx}', {
@@ -447,6 +516,24 @@ export function analyzePackage(packagePath: string): Package {
   })
 
   analyze(filePaths, analyzeResult, packagePath)
+
+  const readmePaths = glob.sync('src/**/README.md', {
+    cwd: packagePath,
+    root: packagePath,
+    realpath: true,
+  })
+
+  readmePaths.forEach(readme => {
+    const relativePath = relative(packagePath, readme)
+    const outPath = dirname(join(analyzeResult.outDir, relativePath))
+    analyzeResult.readmes[outPath] = fs.readFileSync(readme, {encoding: 'utf-8'})
+  })
+  const root = join(analyzeResult.outDir, 'src')
+  if (!analyzeResult.readmes[root]) {
+    if (fs.existsSync(join(packagePath, 'README.md'))) {
+      analyzeResult.readmes[root] = fs.readFileSync(join(packagePath, 'README.md'), {encoding: 'utf-8'})
+    }
+  }
 
   return analyzeResult
 }
