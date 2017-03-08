@@ -1,6 +1,5 @@
-import {FunctionDeclaration} from 'documittu-analyzer-ts'
+import {FunctionDeclaration, Package} from 'documittu-analyzer-ts'
 import * as React from 'react'
-import {Package} from '../../routes'
 import {DocBlock, ImportAs, Markdown} from '../ui/docs'
 import {Type, TypeParameters, joined} from '../ui/types'
 
@@ -9,7 +8,7 @@ export const FunctionDetail = ({fn, context}: {fn: FunctionDeclaration, context:
     <div>
       <h4>{fn.name}</h4>
       <DocBlock>
-        <ImportAs type={fn} context={context} />
+        <ImportAs declaration={fn} context={context} />
         <Markdown source={fn.documentation} />
       </DocBlock>
       <h5>

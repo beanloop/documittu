@@ -7,19 +7,24 @@ export type Package = {
   name: string
   outDir: string
   mainModule?: string
-  declarationModule: {[typeId: string]: /** path */ string}
+  typeDeclaration: {[typeId: string]: /** declarationId */ string}
+  declarationModule: {[declarationId: string]: /** outPath */ string}
   modules: {[path: string]: Module}
   readmes: {[path: string]: string}
+}
+
+export type Reexport = {
+  name: string
+  srcName: string
+  path: string
+  id: string
 }
 
 export type Module = {
   srcPath: string
   outPath: string
-  types: Array<TypeDeclaration>
-  components: Array<ComponentDeclaration>
-  classes: Array<ClassDeclaration>
-  functions: Array<FunctionDeclaration>
-  variables: Array<VariableDeclaration>
+  declarations: {[declarationId: string]: Declaration}
+  reexports: Array<Reexport>
 }
 
 export type DocEntry = {
@@ -35,12 +40,13 @@ export type FunctionDocEntry = DocEntry & {
   returnType: TypeBound
 }
 
-export type Declaration = DocEntry & {
-  name: string
+export type BaseDeclaration = DocEntry & {
   id: string
+  name: string
+  exportedIn: Array<{path: string, name: string}>
 }
 
-export type TypeDeclaration = Declaration & {
+export type TypeDeclaration = BaseDeclaration & {
   parameters?: Array<TypeBound>
   properties: Array<TypeProperty>
 }
@@ -50,25 +56,39 @@ export type TypeProperty = DocEntry & {
   defaultValue?: string
 }
 
-export type ComponentDeclaration = Declaration & {
+export type ComponentDeclaration = BaseDeclaration & {
   properties: Array<TypeProperty>
 }
 
-export type ClassDeclaration = Declaration & {
+export type ClassDeclaration = BaseDeclaration & {
   properties: Array<DocEntry>
   constructors: Array<{parameters: Array<TypeProperty>} & DocEntry>
   methods: Array<FunctionDocEntry>
 }
 
-export type FunctionDeclaration = Declaration & FunctionDocEntry
+export type FunctionDeclaration = BaseDeclaration & FunctionDocEntry
 
-export type VariableDeclaration = Declaration & {
+export type VariableDeclaration = BaseDeclaration & {
   type: TypeBound
   value: string
 }
 
+export type UntaggedDeclaration
+  = ComponentDeclaration
+  | TypeDeclaration
+  | ClassDeclaration
+  | FunctionDeclaration
+  | VariableDeclaration
+
+export type Declaration
+  = ({kind: 'Component'} & ComponentDeclaration)
+  | ({kind: 'Type'} & TypeDeclaration)
+  | ({kind: 'Class'} & ClassDeclaration)
+  | ({kind: 'Function'} & FunctionDeclaration)
+  | ({kind: 'Variable'} & VariableDeclaration)
+
 export type TypeBound
-  = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id: any}
+  = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id?: string, importedFrom?: string}
   | {kind: 'Object', properties: Array<{name: string, type: TypeBound}>, index?: {name: string, type: TypeBound}}
   | {kind: 'Tuple', properties: Array<TypeBound>}
   | {kind: 'Function', typeParameters?: Array<TypeBound>, parameters: Array<{name: string, type: TypeBound}>, returnType: TypeBound}
@@ -85,6 +105,9 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
 }) {
   let program = ts.createProgram(fileNames, options)
   let checker = program.getTypeChecker()
+  let nextDeclarationId = 0
+  const declarationId = () => (nextDeclarationId++).toString()
+  let starExports = [] as Array<{module: string, from: string}>
 
   function outputPath(srcPath: string) {
     const relativeSrcPath = relative(packagePath, srcPath)
@@ -96,25 +119,46 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
   for (const sourceFile of program.getSourceFiles()) {
     if (!fileNames.includes(sourceFile.fileName)) {
       continue
-    const relativeSrcPath = relative(packagePath, srcPath)
-    const outPath = join(analyzeResult.outDir, relativeSrcPath)
-      .replace(/\.[jt]sx?$/, '.js')
-    return outPath
     }
     const srcPath = relative(packagePath, sourceFile.fileName)
     const outPath = outputPath(sourceFile.fileName)
     analyzeResult.modules[outPath] = {
       srcPath,
       outPath,
-      types: [],
-      components: [],
-      classes: [],
-      functions: [],
-      variables: [],
+      declarations: {},
+      reexports: [],
     }
 
     ts.forEachChild(sourceFile, visit)
   }
+
+  starExports.forEach(e => {
+    const to = analyzeResult.modules[e.module]
+    const from = analyzeResult.modules[e.from]
+    if (to && from) {
+      Object.values(from.declarations).forEach(d => {
+        to.reexports.push({
+          name: d.name,
+          srcName: d.name,
+          path: e.from,
+          /// Assign all ids in the next step
+          id: '',
+        })
+      })
+    }
+  })
+
+  Object.values(analyzeResult.modules).forEach(module => {
+    module.reexports.forEach(e => {
+      const otherModule = analyzeResult.modules[e.path]
+      if (!otherModule) return
+      const d = Object.values(otherModule.declarations).find(d => d.name === e.srcName)
+      if (!d) return
+
+      d.exportedIn.push({path: module.outPath, name: e.name})
+      e.id = d.id
+    })
+  })
 
   return analyzeResult
 
@@ -127,30 +171,44 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     const outPath = outputPath(node.getSourceFile().fileName)
     const module = analyzeResult.modules[outPath]
 
+    function addDeclaration(id: string, kind: Declaration['kind'], declaration: Partial<UntaggedDeclaration>) {
+      analyzeResult.declarationModule[id] = outPath
+      module.declarations[id] = {
+        id,
+        kind,
+        exportedIn: [],
+        ...declaration,
+      } as Declaration
+    }
+
+    function addTypeDeclaration(type: ts.Type, kind: Declaration['kind'], declaration: Partial<UntaggedDeclaration>) {
+      const id = declarationId()
+      analyzeResult.typeDeclaration[type['id']] = id
+      addDeclaration(id, kind, declaration)
+    }
+
     if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
-      const symbol = checker.getSymbolAtLocation((<ts.TypeAliasDeclaration>node).name)
+      const symbol = checker.getSymbolAtLocation((node as ts.TypeAliasDeclaration).name)
       const type = checker.getDeclaredTypeOfSymbol(symbol)
-      analyzeResult.declarationModule[type['id']] = outPath
-      module.types.push(serializeTypeDeclaration(symbol))
+
+      addTypeDeclaration(type, 'Type', serializeTypeDeclaration(symbol))
     }
     else if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
-      const symbol = checker.getSymbolAtLocation((<ts.InterfaceDeclaration>node).name)
+      const symbol = checker.getSymbolAtLocation((node as ts.InterfaceDeclaration).name)
       const type = checker.getTypeOfSymbolAtLocation(symbol, node)
-      analyzeResult.declarationModule[type['id']] = outPath
-      module.types.push(serializeTypeDeclaration(symbol))
+
+      addTypeDeclaration(type, 'Type', serializeTypeDeclaration(symbol))
     }
     else if (node.kind === ts.SyntaxKind.ClassDeclaration) {
-      const name = (<ts.ClassDeclaration>node).name
+      const name = (node as ts.ClassDeclaration).name
       if (!name) return
       const symbol = checker.getSymbolAtLocation(name)
       if (!symbol.valueDeclaration) return
       const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
       const properties = getPropsType(type)
 
-      analyzeResult.declarationModule[type['id']] = outPath
       if (properties) {
-        module.components.push({
-          id: type['id'],
+        addTypeDeclaration(type, 'Component', {
           name: name.text,
           documentation: getDocs(symbol),
           properties,
@@ -158,44 +216,37 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       }
       // It's not a component
       else {
-        module.classes.push({
-          id: type['id'],
+        addTypeDeclaration(type, 'Class', {
           name: name.text,
           documentation: getDocs(symbol),
-          ...serializeClass(type)
+          ...serializeClass(type),
         })
       }
     }
     else if (node.kind === ts.SyntaxKind.FunctionDeclaration) {
       const fn = node as ts.FunctionDeclaration
       if (!fn.name) return
-      if (!fn.type) return
 
       const symbol = checker.getSymbolAtLocation(fn.name)
       if (!symbol.valueDeclaration) return
       const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
 
-      analyzeResult.declarationModule[type['id']] = outPath
-      module.functions.push({
-        id: type['id'],
+      addDeclaration(declarationId(), 'Function', {
         name: fn.name.text,
         documentation: getDocs(symbol),
         ...serializeFunction(type),
       })
     }
     else if (node.kind === ts.SyntaxKind.VariableStatement) {
-      (<ts.VariableStatement>node).declarationList.declarations.forEach(d => {
+      (node as ts.VariableStatement).declarationList.declarations.forEach(d => {
         if (d.name.kind !== ts.SyntaxKind.Identifier) return
         const symbol = checker.getSymbolAtLocation(d.name)
         if (!symbol.valueDeclaration) return
         const type = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration)
         const properties = getPropsType(type)
 
-        analyzeResult.declarationModule[type['id']] = outPath
         if (properties) {
-          // analyzeResult.declarationModule[type['id']] = outPath
-          module.components.push({
-            id: type['id'],
+          addDeclaration(declarationId(), 'Component', {
             name: d.name.text,
             documentation: getDocs(symbol),
             properties,
@@ -204,8 +255,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
         // It's not a component
         else {
           if (isFunctionType(type)) {
-            module.functions.push({
-              id: type['id'],
+            addDeclaration(declarationId(), 'Function', {
               name: d.name.text,
               documentation: getDocs(symbol),
               ...serializeFunction(type),
@@ -213,8 +263,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
           }
           else if (symbol.valueDeclaration && symbol.valueDeclaration['initializer']) {
             const declaration = symbol.valueDeclaration as ts.VariableDeclaration
-            module.variables.push({
-              id: type['id'],
+            addDeclaration(declarationId(), 'Variable', {
               name: d.name.text,
               documentation: getDocs(symbol),
               type: serializeTypeBound(type),
@@ -223,6 +272,35 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
           }
         }
       })
+    }
+    else if (node.kind === ts.SyntaxKind.ExportDeclaration) {
+      const e = node as ts.ExportDeclaration
+      if (e.moduleSpecifier) {
+        const path = e.moduleSpecifier.getText().slice(1, -1)
+        if (e.parent && e.parent['resolvedModules'] && e.parent['resolvedModules'][path]) {
+          const resolved = e.parent['resolvedModules'][path]
+          if (!resolved.isExternalLibraryImport) {
+            const outPath = outputPath(resolved.resolvedFileName)
+            if (e.exportClause) {
+              e.exportClause.elements.forEach(e => {
+                module.reexports.push({
+                  name: e.name.getText(),
+                  srcName: e.propertyName
+                    ? e.propertyName.getText()
+                    : e.name.getText(),
+                  path: outPath,
+                  // The id is assigned just before returning the analyze result
+                  // so that we are sure that we have visited the declaration
+                  id: '',
+                })
+              })
+            }
+            else {
+              starExports.push({module: module.outPath, from: outPath})
+            }
+          }
+        }
+      }
     }
   }
 
@@ -271,7 +349,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
   }
 
   function serializeType(type: ts.Type): Array<TypeProperty> {
-    console.error('serializeType', type['id'])
+    // console.error('serializeType', type['id'])
     if (type['types']) {
       return serializeInsersectionType(type as ts.UnionOrIntersectionType)
     }
@@ -306,14 +384,30 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
 
   function serializeTypeProperty(symbol: ts.Symbol) {
     const property = serializeSymbol(symbol) as TypeProperty
-    const valueDeclaration = symbol.valueDeclaration as ts.PropertySignature
-    property.optional = !!(valueDeclaration && valueDeclaration.questionToken)
+    property.optional = !!(symbol.flags & ts.SymbolFlags.Optional)
     return property
   }
 
   function serializeNamedTypeBound(type: ts.Type): TypeBound {
     const typeArguments = type.aliasTypeArguments || (type as ts.TypeReference).typeArguments
     const aliasType = type.aliasSymbol && checker.getDeclaredTypeOfSymbol(type.aliasSymbol) || type
+    const symbol = type.getSymbol() || type.aliasSymbol
+    let importedFrom
+    if (symbol) {
+      let declaration = symbol.getDeclarations()[0]
+      if (declaration) {
+        const fileName = declaration.getSourceFile().fileName
+        if (/\/node_modules\//.test(fileName)) {
+          let match
+          if (match = /\/node_modules\/typescript\/lib\/lib\.([a-z0-9]+)\./.exec(fileName)) {
+            importedFrom = `lib ${match[1]}`
+          }
+          else if (match = /\/node_modules\/(?:@types\/)([a-z0-9-]+)\//.exec(fileName)) {
+            importedFrom = `${match [1]}`
+          }
+        }
+      }
+    }
 
     return {
       kind: 'Named',
@@ -322,6 +416,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
         .split('<')[0],
       parameters: typeArguments && typeArguments.map(serializeTypeBound),
       id: aliasType['id'],
+      importedFrom,
     }
   }
 
@@ -388,15 +483,32 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
       }
     }
     if (type.flags & ts.TypeFlags.Union && !(type.flags & ts.TypeFlags.Boolean)) {
+      // Typescript rewrites `boolean | other` to `true | false | other`
+      const types = (type as ts.UnionOrIntersectionType).types
+        .reduce((types, type) => {
+          const last = types[types.length - 1]
+          if (last && last.kind === 'BooleanLiteral' &&
+              type.flags & ts.TypeFlags.BooleanLiteral) {
+            types[types.length - 1] = {
+              kind: 'Named',
+              name: 'boolean',
+            }
+          }
+          else {
+            types.push(serializeTypeBound(type))
+          }
+          return types
+        }, [] as Array<TypeBound>)
+
       return {
         kind: 'Union',
-        types: (type as ts.UnionOrIntersectionType).types.map(serializeTypeBound),
+        types: types,
       }
     }
     if (type.flags & ts.TypeFlags.BooleanLiteral) {
       return {
         kind: 'BooleanLiteral',
-        value: (type as ts.LiteralType).text,
+        value: (type as ts.LiteralType)['intrinsicName'],
       }
     }
     if (type.flags & ts.TypeFlags.NumberLiteral) {
@@ -416,10 +528,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
 
   function serializeTypeDeclaration(symbol: ts.Symbol) {
     const details = serializeSymbol(symbol) as TypeDeclaration
-    console.error('symbol', checker.getDeclaredTypeOfSymbol(symbol)['id'])
 
     let type = checker.getDeclaredTypeOfSymbol(symbol)
-    details.id = type['id']
     const properties = type.getProperties()
     details.properties = properties.map(serializeTypeProperty)
     return details
@@ -428,8 +538,9 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
   /** True if this is visible outside this file, false otherwise */
   function isNodeExported(node: ts.Node): boolean {
     return !!(
-      (node.flags & ts.NodeFlags.ExportContext) !== 0 ||
-      (node.parent && node.parent.kind === ts.SyntaxKind.SourceFile)
+      (node.flags & ts.NodeFlags.ExportContext) ||
+      (node.modifiers && node.modifiers.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) ||
+      (node.kind === ts.SyntaxKind.ExportDeclaration)
     )
   }
 
@@ -504,6 +615,7 @@ export function analyzePackage(packagePath: string): Package {
     name: packageJson.name,
     mainModule: packageJson.main && normalize(packageJson.main),
     outDir: compilerOptions.outDir,
+    typeDeclaration: {},
     declarationModule: {},
     modules: {},
     readmes: {},

@@ -9,15 +9,18 @@ import {
 import {basename, dirname} from 'path'
 import * as React from 'react'
 import {Link} from 'react-router-dom'
-import {ModulePageConfig} from '../../routes'
+import styled from 'styled-components'
+import {Row} from 'styled-material/dist/src/layout'
+import {Body} from 'styled-material/dist/src/typography'
+import {ModulePageConfig} from '../../lib/entities'
 import {DocBlock, DocListItem, EntryLink, Markdown} from '../ui/docs'
 import {Type, TypeParameters, joined} from '../ui/types'
 
 export const ModuleDetail = ({module, page}: {module: Module, page: ModulePageConfig}) =>
   <div>
-    <h2>{page.title}</h2>
-    {basename(module.outPath) === 'index.js' && page.apiData.readmes[dirname(module.outPath)] &&
-      <Markdown source={page.apiData.readmes[dirname(module.outPath)]} />
+    {basename(module.outPath) === 'index.js' && page.apiData.readmes[dirname(module.outPath)]
+      ? <Markdown source={page.apiData.readmes[dirname(module.outPath)]} />
+      : <h2>{page.title}</h2>
     }
 
     {page.modules.length > 0 &&
@@ -28,42 +31,42 @@ export const ModuleDetail = ({module, page}: {module: Module, page: ModulePageCo
         )}
       </div>
     }
-    {module.components.length > 0 &&
+    {page.components.length > 0 &&
       <div>
         <h3>Components</h3>
-        {module.components.map(component =>
+        {page.components.map(component =>
           <ComponentListItem key={component.name} component={component} page={page} />
         )}
       </div>
     }
-    {module.types.length > 0 &&
+    {page.types.length > 0 &&
       <div>
         <h3>Types</h3>
-        {module.types.map(type =>
+        {page.types.map(type =>
           <TypeListItem key={type.name} type={type} page={page} />
         )}
       </div>
     }
-    {module.classes.length > 0 &&
+    {page.classes.length > 0 &&
       <div>
         <h3>Classes</h3>
-        {module.classes.map(type =>
+        {page.classes.map(type =>
           <ClassListItem key={type.name} type={type} page={page} />
         )}
       </div>
     }
-    {module.functions.length > 0 &&
+    {page.functions.length > 0 &&
       <div>
         <h3>Functions</h3>
-        {module.functions.map(fn =>
+        {page.functions.map(fn =>
           <FunctionListItem key={fn.name} fn={fn} page={page} />
         )}
       </div>
     }
-    {module.variables.length > 0 &&
+    {page.variables.length > 0 &&
       <div>
         <h3>Variables</h3>
-        {module.variables.map(variable =>
+        {page.variables.map(variable =>
           <VariableListItem key={variable.name} variable={variable} page={page} />
         )}
       </div>
@@ -72,21 +75,21 @@ export const ModuleDetail = ({module, page}: {module: Module, page: ModulePageCo
 
 const ModuleListItem = ({page}: {page: ModulePageConfig}) => {
   return (
-    <DocListItem>
+    <div>
       <h4>
         <Link to={page.url}>{page.title}</Link>
       </h4>
       <LeadDocumentation source={page.documentation} />
-    </DocListItem>
+    </div>
   )
 }
 
 const ComponentListItem = ({component, page}: {component: ComponentDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem>
+    <DocListItem item={component} context={page.apiData}>
       <h4>
         {'<'}
-        <EntryLink page={page} entry={component} type='component' />
+        <EntryLink declaration={component} module={page.module} context={page.apiData} />
         {'>'}
       </h4>
       <LeadDocumentation source={component.documentation} />
@@ -96,9 +99,9 @@ const ComponentListItem = ({component, page}: {component: ComponentDeclaration, 
 
 const TypeListItem = ({type, page}: {type: TypeDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem>
+    <DocListItem item={type} context={page.apiData}>
       <h4>
-        <EntryLink page={page} entry={type} type='type' />
+        <EntryLink declaration={type} module={page.module} context={page.apiData} />
       </h4>
       <LeadDocumentation source={type.documentation} />
     </DocListItem>
@@ -107,9 +110,9 @@ const TypeListItem = ({type, page}: {type: TypeDeclaration, page: ModulePageConf
 
 const ClassListItem = ({type, page}: {type: ClassDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem>
+    <DocListItem item={type} context={page.apiData}>
       <h4>
-        <EntryLink page={page} entry={type} type='class' />
+        <EntryLink declaration={type} module={page.module} context={page.apiData} />
       </h4>
       <LeadDocumentation source={type.documentation} />
     </DocListItem>
@@ -118,14 +121,21 @@ const ClassListItem = ({type, page}: {type: ClassDeclaration, page: ModulePageCo
 
 const FunctionListItem = ({fn, page}: {fn: FunctionDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem>
-      <h4>
-        <EntryLink page={page} entry={fn} type='function' />
-        {fn.typeParameters && <TypeParameters parameters={fn.typeParameters} context={page.apiData} />}
-        (
-        {fn.parameters.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={page.apiData} /></span>))}
-        ) => <Type type={fn.returnType} context={page.apiData} />
-      </h4>
+    <DocListItem item={fn} context={page.apiData}>
+      <Row vertical='baseline'>
+        <h4>
+          <EntryLink declaration={fn} module={page.module} context={page.apiData} />
+        </h4>
+        <InfoLine>
+          <span>:&emsp;</span>
+          <code>
+            {fn.typeParameters && <TypeParameters parameters={fn.typeParameters} context={page.apiData} />}
+            (
+            {fn.parameters.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={page.apiData} /></span>))}
+            ) => <Type type={fn.returnType} context={page.apiData} />
+          </code>
+        </InfoLine>
+      </Row>
       <LeadDocumentation source={fn.documentation} />
     </DocListItem>
   )
@@ -133,10 +143,18 @@ const FunctionListItem = ({fn, page}: {fn: FunctionDeclaration, page: ModulePage
 
 const VariableListItem = ({variable, page}: {variable: VariableDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem>
-      <h4>
-        <EntryLink page={page} entry={variable} type='variable' />
-      </h4>
+    <DocListItem item={variable} context={page.apiData}>
+      <Row vertical='baseline'>
+        <h4>
+          <EntryLink declaration={variable} module={page.module} context={page.apiData} />
+        </h4>
+        <InfoLine>
+          <span>:&emsp;</span>
+          <code>
+            <Type type={variable.type} context={page.apiData} />
+          </code>
+        </InfoLine>
+      </Row>
       <LeadDocumentation source={variable.documentation} />
     </DocListItem>
   )
@@ -144,7 +162,13 @@ const VariableListItem = ({variable, page}: {variable: VariableDeclaration, page
 
 const LeadDocumentation = ({source}) =>
   source
-    ? <DocBlock>
-        <Markdown source={source.split('\n\n')[0]} style={{padding:  0}} />
+    ? <DocBlock style={{paddingTop: 0, paddingBottom: 0}}>
+        <Markdown source={source.split('\n\n')[0]} style={{padding: 0}} />
       </DocBlock>
     : <span />
+
+const InfoLine = styled(Body)`
+  overflow: hidden !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+`

@@ -8,7 +8,7 @@ import {AppBar} from 'react-toolbox/lib/app_bar'
 import 'react-toolbox/lib/commons.scss'
 import styled from 'styled-components'
 import {materialColors} from 'styled-material/dist/src/colors'
-import {buildRoutes} from '../routes'
+import {buildRoutes} from '../lib/routes'
 import {mobile} from '../styles'
 import {theme} from '../theme'
 import {FolderPage} from './pages/folder-page'
@@ -71,11 +71,23 @@ const Main = styled.main`
 
   ul {
     padding-left: 32px;
+
+    > li {
+      padding-top: 8px;
+
+      > p {
+        display: inline;
+      }
+    }
   }
 
   p {
     max-width: 600px;
     overflow: auto;
+  }
+
+  strong {
+    font-weight: 500;
   }
 `
 
@@ -138,4 +150,3 @@ export const App = ({title, pages, apiData}) => {
     </ThemeProvider>
   )
 }
-

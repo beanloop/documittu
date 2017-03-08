@@ -12,7 +12,8 @@
     "rootDir": ".",
     "strictNullChecks": true,
     "types": [
-      "node"
+      "node",
+      "jest"
     ]
   },
   "include": [

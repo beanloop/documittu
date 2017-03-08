@@ -9,6 +9,8 @@
     "prepublish": "npm run build"
   },
   "devDependencies": {
+    "@types/jest": "^18.1.1",
+    "@types/react": "^15.0.14",
     "tscomp": "^0.8.0"
   },
   "dependencies": {

@@ -7,7 +7,8 @@ import Switch from 'react-router/Switch'
 import styled from 'styled-components'
 import {materialColors} from 'styled-material/dist/src/colors'
 import {Column} from 'styled-material/dist/src/layout'
-import {ModulePageConfig} from '../../routes'
+import {ModulePageConfig} from '../../lib/entities'
+import {entryUrl} from '../../lib/urls'
 import {ClassDetail} from '../docs/class-detail'
 import {ComponentDetail} from '../docs/component-detail'
 import {FunctionDetail} from '../docs/function-detail'
@@ -15,7 +16,6 @@ import {ModuleDetail} from '../docs/module-detail'
 import {TypeDetail} from '../docs/type-detail'
 import {VariableDetail} from '../docs/variable-detail'
 import {RouterLink} from '../router-link'
-import {entryUrl} from '../ui/docs'
 import {Container, Content, Nav, NavLink} from '../ui/sidenav-layout'
 
 const PathLink: any = styled(Link)`
@@ -75,75 +75,75 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
             )}
           </NavBlock>
         }
-        {page.module.components.length > 0 &&
+        {page.components.length > 0 &&
           <NavBlock>
             <h3>Components</h3>
-            {page.module.components.map(component =>
+            {page.components.map(component =>
               <RouterLink
                 key={component.name}
                 component={NavLink}
                 exact
-                to={entryUrl(component, page, 'component')}
+                to={entryUrl(component, page.module, page.apiData)}
               >
                 {component.name}
               </RouterLink>
             )}
           </NavBlock>
         }
-        {page.module.types.length > 0 &&
+        {page.types.length > 0 &&
           <NavBlock>
             <h3>Types</h3>
-            {page.module.types.map(type =>
+            {page.types.map(type =>
               <RouterLink
                 key={type.name}
                 component={NavLink}
                 exact
-                to={entryUrl(type, page, 'type')}
+                to={entryUrl(type, page.module, page.apiData)}
               >
                 {type.name}
               </RouterLink>
             )}
           </NavBlock>
         }
-        {page.module.classes.length > 0 &&
+        {page.classes.length > 0 &&
           <NavBlock>
             <h3>Classes</h3>
-            {page.module.classes.map(type =>
+            {page.classes.map(type =>
               <RouterLink
                 key={type.name}
                 component={NavLink}
                 exact
-                to={entryUrl(type, page, 'class')}
+                to={entryUrl(type, page.module, page.apiData)}
               >
                 {type.name}
               </RouterLink>
             )}
           </NavBlock>
         }
-        {page.module.functions.length > 0 &&
+        {page.functions.length > 0 &&
           <NavBlock>
             <h3>Functions</h3>
-            {page.module.functions.map(fn =>
+            {page.functions.map(fn =>
               <RouterLink
                 key={fn.name}
                 component={NavLink}
                 exact
-                to={entryUrl(fn, page, 'function')}
+                to={entryUrl(fn, page.module, page.apiData)}
               >
                 {fn.name}
               </RouterLink>
             )}
           </NavBlock>
         }
-        {page.module.variables.length > 0 &&
+        {page.variables.length > 0 &&
           <NavBlock>
             <h3>Variables</h3>
-            {page.module.variables.map(variable =>
+            {page.variables.map(variable =>
               <RouterLink
                 key={variable.name}
                 component={NavLink}
                 exact
-                to={entryUrl(variable, page, 'variable')}
+                to={entryUrl(variable, page.module, page.apiData)}
               >
                 {variable.name}
               </RouterLink>
@@ -152,28 +152,28 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
         }
       </Nav>
       <Content>
-        {page.module.components.map(component =>
-          <Route exact key={component.name} path={entryUrl(component, page, 'component')} render={() =>
+        {page.components.map(component =>
+          <Route exact key={component.name} path={entryUrl(component, page.module, page.apiData)} render={() =>
             <ComponentDetail component={component} context={page.apiData} />
           } />
         )}
-        {page.module.types.map(type =>
-          <Route exact key={type.name} path={entryUrl(type, page, 'type')} render={() =>
+        {page.types.map(type =>
+          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiData)} render={() =>
             <TypeDetail type={type} context={page.apiData} />
           } />
         )}
-        {page.module.classes.map(type =>
-          <Route exact key={type.name} path={entryUrl(type, page, 'class')} render={() =>
+        {page.classes.map(type =>
+          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiData)} render={() =>
             <ClassDetail type={type} context={page.apiData} />
           } />
         )}
-        {page.module.functions.map(fn =>
-          <Route exact key={fn.name} path={entryUrl(fn, page, 'function')} render={() =>
+        {page.functions.map(fn =>
+          <Route exact key={fn.name} path={entryUrl(fn, page.module, page.apiData)} render={() =>
             <FunctionDetail fn={fn} context={page.apiData} />
           } />
         )}
-        {page.module.variables.map(variable =>
-          <Route exact key={variable.name} path={entryUrl(variable, page, 'variable')} render={() =>
+        {page.variables.map(variable =>
+          <Route exact key={variable.name} path={entryUrl(variable, page.module, page.apiData)} render={() =>
             <VariableDetail variable={variable} context={page.apiData} />
           } />
         )}

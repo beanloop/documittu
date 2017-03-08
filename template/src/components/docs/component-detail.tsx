@@ -1,6 +1,5 @@
-import {ComponentDeclaration} from 'documittu-analyzer-ts'
+import {ComponentDeclaration, Package} from 'documittu-analyzer-ts'
 import * as React from 'react'
-import {Package} from '../../routes'
 import {DocBlock, ImportAs, Markdown, Property} from '../ui/docs'
 
 export const ComponentDetail = ({component, context}: {component: ComponentDeclaration, context: Package}) => {
@@ -11,7 +10,7 @@ export const ComponentDetail = ({component, context}: {component: ComponentDecla
     <div>
       <h3>{component.name}</h3>
       <DocBlock>
-        <ImportAs type={component} context={context} />
+        <ImportAs declaration={component} context={context} />
         <Markdown source={component.documentation} />
       </DocBlock>
       {requiredProps.length === 0 && optionalProps.length === 0 &&

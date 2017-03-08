@@ -1,34 +1,31 @@
-import {TypeBound} from 'documittu-analyzer-ts'
+import {Package, TypeBound} from 'documittu-analyzer-ts'
 import * as React from 'react'
 import {Link} from 'react-router-dom'
-import styled from 'styled-components'
-import {materialColors} from 'styled-material/dist/src/colors'
-import {Package} from '../../routes'
-
-const TypeName = styled.span`
-  color: ${materialColors['indigo-600']};
-`
-
-const BooleanLiteral = styled.span`
-  color: ${materialColors['purple-700']};
-`
-const NumberLiteral = styled.span`
-  color: ${materialColors['blue-700']};
-`
-const StringLiteral = styled.span`
-  color: ${materialColors['green-700']};
-`
+import {entryUrl} from '../../lib/urls'
+import {importPath} from './docs'
+import {Keyword, NumberLiteral, StringLiteral, TypeName} from './syntax'
 
 export function joined(delimiter: string, fn) {
   return (e, i) => i === 0
-    ? fn(e)
+    ? React.cloneElement(fn(e), {key: i})
     : <span key={i}>{delimiter}{fn(e)}</span>
 }
 
-function typeUrl(context: Package, type: {id: any}) {
-  return context.declarationModule[type.id] &&
-         context.modules[context.declarationModule[type.id]].typeUrls &&
-         context.modules[context.declarationModule[type.id]].typeUrls[type.id]
+function typeUrl(context: Package, type: {id?: any}) {
+  const id = context.typeDeclaration[type.id]
+  const modulePath = context.declarationModule[id]
+  const module = context.modules[modulePath]
+  const declaration = module && module.declarations[id]
+
+  return declaration && entryUrl(declaration, module, context)
+}
+
+function typeImportPath(context: Package, type: {id?: any}) {
+  const id = context.typeDeclaration[type.id]
+  const modulePath = context.declarationModule[id]
+  const module = context.modules[modulePath]
+
+  return module && importPath(module, context)
 }
 
 export const Type = ({type, context}: {type: TypeBound, context: Package}): React.ReactElement<any> => {
@@ -37,8 +34,18 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
       return (
         <span>
           {typeUrl(context, type)
-            ? <Link to={typeUrl(context, type)}><TypeName>{type.name}</TypeName></Link>
-            : <TypeName>{type.name}</TypeName>
+            ? <Link
+                to={typeUrl(context, type)}
+                title={`from ${typeImportPath(context, type)}`}
+              >
+                <TypeName>{type.name}</TypeName>
+              </Link>
+            : <TypeName
+                title={type.importedFrom && `from ${type.importedFrom}`}
+                style={{cursor: 'default'}}
+              >
+                {type.name}
+              </TypeName>
           }
           {type.parameters && <TypeParameters parameters={type.parameters} context={context} />}
         </span>
@@ -68,7 +75,9 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
         <span>
           {type.typeParameters && <TypeParameters parameters={type.typeParameters} context={context} />}
           (
-          {type.parameters.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={context} /></span>))}
+          {type.parameters.map(joined(', ', p =>
+            <span>{p.name}: <Type type={p.type} context={context} /></span>
+          ))}
           ) => <Type type={type.returnType} context={context} />
         </span>
     )
@@ -85,7 +94,7 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
         </span>
     )
     case 'BooleanLiteral':
-      return <BooleanLiteral>{type.value}</BooleanLiteral>
+      return <Keyword>{type.value}</Keyword>
     case 'NumberLiteral':
       return <NumberLiteral>{type.value}</NumberLiteral>
     case 'StringLiteral':

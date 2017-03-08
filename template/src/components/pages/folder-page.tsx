@@ -2,7 +2,7 @@ import * as React from 'react'
 import DocumentTitle from 'react-document-title'
 import Redirect from 'react-router/Redirect'
 import Route from 'react-router/Route'
-import {FolderPageConfig} from '../../routes'
+import {FolderPageConfig} from '../../lib/entities'
 import {RouterLink} from '../router-link'
 import {Container, Content, Nav, NavLink} from '../ui/sidenav-layout'
 

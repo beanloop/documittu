@@ -1,6 +1,5 @@
-import {VariableDeclaration} from 'documittu-analyzer-ts'
+import {Package, VariableDeclaration} from 'documittu-analyzer-ts'
 import * as React from 'react'
-import {Package} from '../../routes'
 import {CodeBlock, DocBlock, ImportAs, Markdown} from '../ui/docs'
 import {Type} from '../ui/types'
 
@@ -9,7 +8,7 @@ export const VariableDetail = ({variable, context}: {variable: VariableDeclarati
     <div>
       <h4>{variable.name}</h4>
       <DocBlock>
-        <ImportAs type={variable} context={context} />
+        <ImportAs declaration={variable} context={context} />
         <Markdown source={variable.documentation} />
       </DocBlock>
       <h6>Type</h6>

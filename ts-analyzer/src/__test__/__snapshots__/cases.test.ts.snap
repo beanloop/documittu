@@ -1,0 +1,315 @@
+exports[`analyze cases should emit boolean as boolean 1`] = `
+Object {
+  "declarationModule": Object {
+    "0": "src/__test__/cases-out/booleans.js",
+  },
+  "mainModule": undefined,
+  "modules": Object {
+    "src/__test__/cases-out/booleans.js": Object {
+      "declarations": Object {
+        "0": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "0",
+          "kind": "Type",
+          "name": "A",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "a",
+              "optional": false,
+              "type": Object {
+                "id": 12,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "boolean",
+                "parameters": undefined,
+              },
+            },
+            Object {
+              "documentation": "",
+              "name": "b",
+              "optional": false,
+              "type": Object {
+                "kind": "Union",
+                "types": Array [
+                  Object {
+                    "id": 8,
+                    "importedFrom": undefined,
+                    "kind": "Named",
+                    "name": "string",
+                    "parameters": undefined,
+                  },
+                  Object {
+                    "kind": "Named",
+                    "name": "boolean",
+                  },
+                ],
+              },
+            },
+          ],
+          "type": Object {
+            "id": 46,
+            "importedFrom": undefined,
+            "kind": "Named",
+            "name": "A",
+            "parameters": undefined,
+          },
+        },
+      },
+      "outPath": "src/__test__/cases-out/booleans.js",
+      "reexports": Array [],
+      "srcPath": "booleans.ts",
+    },
+  },
+  "name": "cases",
+  "outDir": "src/__test__/cases-out",
+  "readmes": Object {},
+  "typeDeclaration": Object {
+    "46": "0",
+  },
+}
+`;
+
+exports[`analyze cases should emit components 1`] = `
+Object {
+  "declarationModule": Object {
+    "0": "src/__test__/cases-out/components.js",
+    "1": "src/__test__/cases-out/components.js",
+    "2": "src/__test__/cases-out/components.js",
+    "3": "src/__test__/cases-out/components.js",
+    "4": "src/__test__/cases-out/components.js",
+    "5": "src/__test__/cases-out/components.js",
+    "6": "src/__test__/cases-out/components.js",
+    "7": "src/__test__/cases-out/components.js",
+    "8": "src/__test__/cases-out/components.js",
+    "9": "src/__test__/cases-out/components.js",
+  },
+  "mainModule": undefined,
+  "modules": Object {
+    "src/__test__/cases-out/components.js": Object {
+      "declarations": Object {
+        "0": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "0",
+          "kind": "Component",
+          "name": "A",
+          "properties": Array [],
+        },
+        "1": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "1",
+          "kind": "Component",
+          "name": "B",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": false,
+              "type": Object {
+                "id": 3,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "any",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "2": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "2",
+          "kind": "Component",
+          "name": "C",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": true,
+              "type": Object {
+                "id": 3,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "any",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "3": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "3",
+          "kind": "Component",
+          "name": "D",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": false,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "4": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "4",
+          "kind": "Component",
+          "name": "E",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": false,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "5": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "5",
+          "kind": "Component",
+          "name": "F",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": true,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "6": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "6",
+          "kind": "Component",
+          "name": "G",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": true,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "7": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "7",
+          "kind": "Component",
+          "name": "H",
+          "properties": Array [],
+        },
+        "8": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "8",
+          "kind": "Component",
+          "name": "I",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "children",
+              "optional": true,
+              "type": Object {
+                "id": 152,
+                "importedFrom": "react",
+                "kind": "Named",
+                "name": "ReactNode",
+                "parameters": undefined,
+              },
+            },
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": false,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+        "9": Object {
+          "documentation": "",
+          "exportedIn": Array [],
+          "id": "9",
+          "kind": "Component",
+          "name": "J",
+          "properties": Array [
+            Object {
+              "documentation": "",
+              "name": "children",
+              "optional": true,
+              "type": Object {
+                "id": 152,
+                "importedFrom": "react",
+                "kind": "Named",
+                "name": "ReactNode",
+                "parameters": undefined,
+              },
+            },
+            Object {
+              "documentation": "",
+              "name": "name",
+              "optional": true,
+              "type": Object {
+                "id": 8,
+                "importedFrom": undefined,
+                "kind": "Named",
+                "name": "string",
+                "parameters": undefined,
+              },
+            },
+          ],
+        },
+      },
+      "outPath": "src/__test__/cases-out/components.js",
+      "reexports": Array [],
+      "srcPath": "components.tsx",
+    },
+  },
+  "name": "cases",
+  "outDir": "src/__test__/cases-out",
+  "readmes": Object {},
+  "typeDeclaration": Object {
+    "133": "8",
+    "153": "9",
+    "91": "7",
+  },
+}
+`;

@@ -1,6 +1,8 @@
 // import slug from 'slug'
-import {Module as AnalyzerModule, Package as AnalyzerPackage} from 'documittu-analyzer-ts/src/index'
+import {Module, Package} from 'documittu-analyzer-ts'
 import {basename, dirname, join, normalize} from 'path'
+import {ModulePageConfig, Page, TopLevel} from './entities'
+import {moduleUrl} from './urls'
 
 function slug(a) {return a.replace(/[^a-zA-Z0-9-]/, '-').replace(/--/, '-')}
 
@@ -16,46 +18,14 @@ export function createUrl(attributes, path) {
   return path
 }
 
-export type Module = AnalyzerModule & {typeUrls: {[typeId: string]: string}}
-export type Package = AnalyzerPackage & {modules: {[path: string]: Module}}
-
-export type Page = {
-  url: string
-  title: string
-  attributes: any
-  component: React.ReactType
-}
-
-export type FolderPageConfig = {
-  url: string
-  title: string
-  subPages: Array<Page>
-  redirectTo?: string
-}
-
-export type ModulePageConfig = {
-  url: string
-  title: string
-  module: Module
-  apiData: Package
-  modules: Array<ModulePageConfig>
-}
-
-export type TopLevel
-  = ({kind: 'folder'} & FolderPageConfig)
-  | ({kind: 'page'} & Page)
-  | ({kind: 'redirect', url: string, title: undefined, to: string})
-  | ({kind: 'module'} & ModulePageConfig)
-
-export function buildRoutes(pages, apiData: AnalyzerPackage) {
+export function buildRoutes(pages, apiData: Package) {
   let routes
 
   if (pages) {
     routes = buildPageRoutes(pages)
   }
   else if (apiData) {
-    const context = apiData as Package
-    routes = buildApiDataRoutes(context)
+    routes = buildApiDataRoutes(apiData)
   }
   else {
     throw 'Neither pages nor apiData was provided'
@@ -140,13 +110,10 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
   console.log('apiData.mainModule', apiData.mainModule)
   Object.values(apiData.modules)
     .forEach((module: Module) => {
-      const url = apiData.mainModule === module.outPath ? '/' : join('/', module.outPath)
+      const url = moduleUrl(module, apiData)
+      const declarations = Object.keys(module.declarations)
       if (
-        !module.components.length &&
-        !module.types.length &&
-        !module.classes.length &&
-        !module.functions.length &&
-        !module.variables.length &&
+        declarations.length === 0 &&
         url !== '/'
       ) return
 
@@ -155,29 +122,67 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
         ? apiData.name
         : basename(module.outPath).replace(/\.js$/, '')
 
-      module.typeUrls = {}
-      module.types.forEach(type => {
-        if (!apiData.declarationModule[type.id]) {
-          apiData.declarationModule[type.id] = module.outPath
-        }
-
-        module.typeUrls[type.id] = join(url, `type.${type.name}`)
-      })
-      module.classes.forEach(type => {
-        if (!apiData.declarationModule[type.id]) {
-          apiData.declarationModule[type.id] = module.outPath
-        }
-
-        module.typeUrls[type.id] = join(url, `class.${type.name}`)
-      })
-
       const modulePage: ModulePageConfig = {
         title,
         url,
         module,
         apiData,
         modules: [],
+
+        components: [],
+        types: [],
+        classes: [],
+        functions: [],
+        variables: [],
       }
+
+      declarations.forEach(id => {
+        const declaration = module.declarations[id]
+
+        switch (declaration.kind) {
+          case 'Component':
+            modulePage.components.push(declaration)
+            break
+          case 'Type':
+            modulePage.types.push(declaration)
+            break
+          case 'Class':
+            modulePage.classes.push(declaration)
+            break
+          case 'Function':
+            modulePage.functions.push(declaration)
+            break
+          case 'Variable':
+            modulePage.variables.push(declaration)
+            break
+        }
+      })
+
+      module.reexports.forEach(e => {
+        const originalModule = apiData.modules[e.path]
+        if (!originalModule) return
+        let declaration = originalModule.declarations[e.id]
+        if (!declaration) return
+        declaration = {...declaration, reexport: e, name: e.name}
+
+        switch (declaration.kind) {
+          case 'Component':
+            modulePage.components.push(declaration)
+            break
+          case 'Type':
+            modulePage.types.push(declaration)
+            break
+          case 'Class':
+            modulePage.classes.push(declaration)
+            break
+          case 'Function':
+            modulePage.functions.push(declaration)
+            break
+          case 'Variable':
+            modulePage.variables.push(declaration)
+            break
+        }
+      })
 
       if (url === '/') {
         rootModule = modulePage
@@ -194,8 +199,9 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
   let dirs = Object.keys(modules)
   if (dirs.length > 0) {
     const path = dirs[0].split('/')
+    console.log('path', path)
     for (const dir of path) {
-      if (dirs.every(d => d.startsWith(`${dir}/`))) {
+      if (dirs.every(d => d.startsWith(`${dir}/`) || d === dir)) {
         dirs = dirs.map(d => {
           const updatedPath = d.slice(dir.length + 1)
           modules[updatedPath] = modules[d]
@@ -206,6 +212,7 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
       }
       else break
     }
+    console.log('modules', modules)
     for (const dir of dirs) {
       let url, outPath
       for (const module of modules[dir]) {
@@ -225,19 +232,21 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
           module: {
             srcPath: '',
             outPath: join(dirname(outPath), 'index.js'),
-            typeUrls: {},
-            components: [],
-            types: [],
-            classes: [],
-            functions: [],
-            variables: [],
+            declarations: {},
+            reexports: [],
           },
           apiData,
           modules: modules[dir],
+          components: [],
+          types: [],
+          classes: [],
+          functions: [],
+          variables: [],
         }
       }
     }
   }
+  console.log('indexModules', indexModules)
   // Sort the keys with longest first first so we visit the most nested path first
   let indexModulePaths = Object.keys(indexModules).sort((a, b) => b.length - a.length)
   for (const path of indexModulePaths) {
@@ -245,15 +254,24 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
     const parents = indexModulePaths.filter(d => path.startsWith(`${d}/`))
       .sort((a, b) => b.length - a.length)
 
+    if (parents.length === 0 && path !== '' && indexModules['']) {
+      parents.push('')
+    }
+
     if (parents.length > 0) {
       // Push this module into the parents modules and remove it from what will be the root modules
       indexModules[parents[0]].modules.push(indexModules[path])
       delete indexModules[path]
     }
   }
+  console.log('parented', indexModules)
+
+  const rootModules = indexModules['']
+    ? indexModules[''].modules
+    : Object.values(indexModules)
 
   if (rootModule) {
-    rootModule.modules = Object.values(indexModules)
+    rootModule.modules = rootModules
     return [{kind: 'module' as 'module', ...rootModule}]
   }
   else {
@@ -264,15 +282,17 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
       module: {
         srcPath: '',
         outPath: '',
-        typeUrls: {},
-        components: [],
-        types: [],
-        classes: [],
-        functions: [],
-        variables: [],
+        declarations: {},
+        reexports: [],
       },
       apiData,
-      modules: Object.values(indexModules),
+      modules: rootModules,
+
+      components: [],
+      types: [],
+      classes: [],
+      functions: [],
+      variables: [],
     }]
   }
 }
