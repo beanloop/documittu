@@ -493,7 +493,7 @@ module.exports = {
         exclude: /node_modules/,
         loaders: [
           'babel?' + JSON.stringify(require('tscomp/config/babel.dev')),
-          'react-markdown'
+          'documittu-markdown'
         ],
       },
     ]

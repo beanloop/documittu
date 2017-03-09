@@ -1,0 +1,51 @@
+{
+  "name": "documittu",
+  "version": "0.1.0",
+  "description": "",
+  "bin": {
+    "documittu": "./bin/documittu.js"
+  },
+  "repository": "https://github.com/beanloop/documittu.git",
+  "author": "Beanloop AB",
+  "license": "MIT",
+  "devDependencies": {
+    "tslint": "^4.0.2",
+    "tslint-config-beanloop": "^0.1.0"
+  },
+  "dependencies": {
+    "documittu-template-default": "*",
+    "documittu-markdown-loader": "*",
+    "@types/node": "^7.0.5",
+    "@types/react": "^15.0.10",
+    "@types/react-dom": "^0.14.23",
+    "@types/webpack": "^2.2.6",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-react-app": "^2.1.1",
+    "case-sensitive-paths-webpack-plugin": "1.1.4",
+    "chalk": "1.1.3",
+    "css-loader": "0.26.1",
+    "detect-port": "1.0.1",
+    "extract-text-webpack-plugin": "1.0.1",
+    "file-loader": "0.10.0",
+    "filesize": "3.3.0",
+    "fs-extra": "0.30.0",
+    "gzip-size": "3.0.0",
+    "html-webpack-plugin": "2.28.0",
+    "postcss-loader": "1.3.1",
+    "react": "^15.4.2",
+    "react-dev-utils": "^0.5.1",
+    "react-dom": "^15.4.2",
+    "react-markdown": "^2.4.4",
+    "react-markdown-loader": "^1.1.10",
+    "react-markdown-loader-fork": "^1.1.10",
+    "react-scripts": "^0.9.2",
+    "style-loader": "0.13.1",
+    "ts-loader": "^0.8.2",
+    "tscomp": "^0.9.1-dev3",
+    "url-loader": "0.5.7",
+    "virtual-module-webpack-plugin": "^0.1.3",
+    "webpack": "1",
+    "webpack-dev-server": "1.15.1",
+    "webpack-manifest-plugin": "1.1.0"
+  }
+}

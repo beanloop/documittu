@@ -217,7 +217,7 @@ module.exports = {
         test: /\.md$/,
         loaders: [
           'babel-loader?' + JSON.stringify(require('tscomp/config/babel.prod')),
-          'react-markdown-loader',
+          'documittu-markdown-loader',
         ],
       },
     ]

@@ -26,7 +26,8 @@ function resolveOwn(relativePath) {
   return path.resolve(__dirname, relativePath)
 }
 function resolveTemplate(relativePath) {
-  return path.resolve(__dirname, '..', 'template', relativePath)
+  const templatePath = path.dirname(require.resolve('documittu-template-default/package.json'))
+  return path.resolve(templatePath, relativePath)
 }
 
 var envPublicUrl = process.env.PUBLIC_URL;
