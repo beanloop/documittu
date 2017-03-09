@@ -13,8 +13,8 @@
     "tslint-config-beanloop": "^0.1.0"
   },
   "dependencies": {
-    "documittu-template-default": "*",
-    "documittu-markdown-loader": "*",
+    "documittu-template-default": "^0.1.0",
+    "documittu-markdown-loader": "^0.1.0",
     "@types/node": "^7.0.5",
     "@types/react": "^15.0.10",
     "@types/react-dom": "^0.14.23",
