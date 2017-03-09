@@ -45,15 +45,15 @@ const NavBlock = styled.div`
   }
 `
 
-export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appTitle: String, path: Array<ModulePageConfig>}) =>
+export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appTitle: string, path: Array<ModulePageConfig>}) =>
   <Column>
-    <DocumentTitle title={`Module - ${appTitle}`} />
-    <PathBar>
+    <DocumentTitle title={`${page.apiDocs.title || 'Api Documentation'} - ${appTitle}`} />
+    < PathBar >
       {path.map((part, i) =>
         <span key={i}>
           {i > 0 && ' / '}
           <RouterLink key={part.url} component={PathLink} exact to={part.url}>
-            {part.title}
+            {part.module.name}
           </RouterLink>
         </span>
       )}
@@ -83,7 +83,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
                 key={component.name}
                 component={NavLink}
                 exact
-                to={entryUrl(component, page.module, page.apiData)}
+                to={entryUrl(component, page.module, page.apiDocs)}
               >
                 {component.name}
               </RouterLink>
@@ -98,7 +98,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
                 key={type.name}
                 component={NavLink}
                 exact
-                to={entryUrl(type, page.module, page.apiData)}
+                to={entryUrl(type, page.module, page.apiDocs)}
               >
                 {type.name}
               </RouterLink>
@@ -113,7 +113,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
                 key={type.name}
                 component={NavLink}
                 exact
-                to={entryUrl(type, page.module, page.apiData)}
+                to={entryUrl(type, page.module, page.apiDocs)}
               >
                 {type.name}
               </RouterLink>
@@ -128,7 +128,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
                 key={fn.name}
                 component={NavLink}
                 exact
-                to={entryUrl(fn, page.module, page.apiData)}
+                to={entryUrl(fn, page.module, page.apiDocs)}
               >
                 {fn.name}
               </RouterLink>
@@ -143,7 +143,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
                 key={variable.name}
                 component={NavLink}
                 exact
-                to={entryUrl(variable, page.module, page.apiData)}
+                to={entryUrl(variable, page.module, page.apiDocs)}
               >
                 {variable.name}
               </RouterLink>
@@ -153,28 +153,28 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
       </Nav>
       <Content>
         {page.components.map(component =>
-          <Route exact key={component.name} path={entryUrl(component, page.module, page.apiData)} render={() =>
-            <ComponentDetail component={component} context={page.apiData} />
+          <Route exact key={component.name} path={entryUrl(component, page.module, page.apiDocs)} render={() =>
+            <ComponentDetail component={component} apiDocs={page.apiDocs} />
           } />
         )}
         {page.types.map(type =>
-          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiData)} render={() =>
-            <TypeDetail type={type} context={page.apiData} />
+          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiDocs)} render={() =>
+            <TypeDetail type={type} apiDocs={page.apiDocs} />
           } />
         )}
         {page.classes.map(type =>
-          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiData)} render={() =>
-            <ClassDetail type={type} context={page.apiData} />
+          <Route exact key={type.name} path={entryUrl(type, page.module, page.apiDocs)} render={() =>
+            <ClassDetail type={type} apiDocs={page.apiDocs} />
           } />
         )}
         {page.functions.map(fn =>
-          <Route exact key={fn.name} path={entryUrl(fn, page.module, page.apiData)} render={() =>
-            <FunctionDetail fn={fn} context={page.apiData} />
+          <Route exact key={fn.name} path={entryUrl(fn, page.module, page.apiDocs)} render={() =>
+            <FunctionDetail fn={fn} apiDocs={page.apiDocs} />
           } />
         )}
         {page.variables.map(variable =>
-          <Route exact key={variable.name} path={entryUrl(variable, page.module, page.apiData)} render={() =>
-            <VariableDetail variable={variable} context={page.apiData} />
+          <Route exact key={variable.name} path={entryUrl(variable, page.module, page.apiDocs)} render={() =>
+            <VariableDetail variable={variable} apiDocs={page.apiDocs} />
           } />
         )}
         <Route exact path={page.url} render={() =>
@@ -184,7 +184,7 @@ export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appT
     </Container>
   </Column>
 
-export const ModuleRoutes = ({page, appTitle, parent}: {page: ModulePageConfig, appTitle: String, parent?: Array<ModulePageConfig>}) =>
+export const ModuleRoutes = ({page, appTitle, parent}: {page: ModulePageConfig, appTitle: string, parent?: Array<ModulePageConfig>}) =>
   <Switch>
     {page.modules.map(module =>
       <Route key={module.url} path={module.url} render={() =>

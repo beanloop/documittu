@@ -2,7 +2,7 @@
   "name": "documittu-template-default",
   "version": "0.1.0",
   "description": "",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tscomp build",
     "watch": "tscomp watch",
@@ -36,6 +36,6 @@
     "recompose": "^0.22.0",
     "slug": "^0.9.1",
     "styled-components": "^1.4.3",
-    "styled-material": "^0.1.8"
+    "styled-material": "^0.1.9"
   }
 }

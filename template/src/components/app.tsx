@@ -29,10 +29,13 @@ const Main = styled.main`
   }
 
   code {
-    background: whitesmoke;
+    background-color: ${materialColors['grey-100']};
   }
+
   pre {
+    padding: 12px;
     overflow: auto;
+    background-color: ${materialColors['grey-100']};
 
     > code {
       background: none;
@@ -113,8 +116,8 @@ const NavLink: any = styled(Link)`
   }
 `
 
-export const App = ({title, pages, apiData}) => {
-  const routes = buildRoutes(pages, apiData)
+export const App = ({title, pages, apiDocs}) => {
+  const routes = buildRoutes(pages, apiDocs)
 
   return (
     <ThemeProvider theme={theme}>

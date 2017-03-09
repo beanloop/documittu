@@ -7439,9 +7439,9 @@ styled-components@^1.1.1, styled-components@^1.4.3:
     is-plain-object "^2.0.1"
     supports-color "^3.1.2"
 
-styled-material@^0.1.8:
-  version "0.1.8"
-  resolved "https://registry.yarnpkg.com/styled-material/-/styled-material-0.1.8.tgz#a9ea8957d41d7bd53f430ccb0a1364ba0a1deda5"
+styled-material@^0.1.9:
+  version "0.1.9"
+  resolved "https://registry.yarnpkg.com/styled-material/-/styled-material-0.1.9.tgz#98d6e9ef927f6c1760bbb78cb9aa76a76d3ff9e4"
   dependencies:
     "@types/react" "^15.0.0"
     styled-components "^1.1.1"

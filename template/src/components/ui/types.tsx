@@ -1,6 +1,7 @@
-import {Package, TypeBound} from 'documittu-analyzer-ts'
+import {TypeBound} from 'documittu-analyzer-ts'
 import * as React from 'react'
 import {Link} from 'react-router-dom'
+import {ApiDocs} from '../../lib/entities'
 import {entryUrl} from '../../lib/urls'
 import {importPath} from './docs'
 import {Keyword, NumberLiteral, StringLiteral, TypeName} from './syntax'
@@ -11,32 +12,32 @@ export function joined(delimiter: string, fn) {
     : <span key={i}>{delimiter}{fn(e)}</span>
 }
 
-function typeUrl(context: Package, type: {id?: any}) {
-  const id = context.typeDeclaration[type.id]
-  const modulePath = context.declarationModule[id]
-  const module = context.modules[modulePath]
+function typeUrl(apiDocs: ApiDocs, type: {id?: any}) {
+  const id = apiDocs.data.typeDeclaration[type.id]
+  const modulePath = apiDocs.data.declarationModule[id]
+  const module = apiDocs.data.modules[modulePath]
   const declaration = module && module.declarations[id]
 
-  return declaration && entryUrl(declaration, module, context)
+  return declaration && entryUrl(declaration, module, apiDocs)
 }
 
-function typeImportPath(context: Package, type: {id?: any}) {
-  const id = context.typeDeclaration[type.id]
-  const modulePath = context.declarationModule[id]
-  const module = context.modules[modulePath]
+function typeImportPath(apiDocs: ApiDocs, type: {id?: any}) {
+  const id = apiDocs.data.typeDeclaration[type.id]
+  const modulePath = apiDocs.data.declarationModule[id]
+  const module = apiDocs.data.modules[modulePath]
 
-  return module && importPath(module, context)
+  return module && importPath(module, apiDocs)
 }
 
-export const Type = ({type, context}: {type: TypeBound, context: Package}): React.ReactElement<any> => {
+export const Type = ({type, apiDocs}: {type: TypeBound, apiDocs: ApiDocs}): React.ReactElement<any> => {
   switch (type.kind) {
     case 'Named':
       return (
         <span>
-          {typeUrl(context, type)
+          {typeUrl(apiDocs, type)
             ? <Link
-                to={typeUrl(context, type)}
-                title={`from ${typeImportPath(context, type)}`}
+                to={typeUrl(apiDocs, type)}
+                title={`from ${typeImportPath(apiDocs, type)}`}
               >
                 <TypeName>{type.name}</TypeName>
               </Link>
@@ -47,17 +48,17 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
                 {type.name}
               </TypeName>
           }
-          {type.parameters && <TypeParameters parameters={type.parameters} context={context} />}
+          {type.parameters && <TypeParameters parameters={type.parameters} apiDocs={apiDocs} />}
         </span>
     )
     case 'Object':
       return (
         <span>
           {'{'}
-          {type.properties.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={context} /></span>))}
+          {type.properties.map(joined(', ', p => <span>{p.name}: <Type type={p.type} apiDocs={apiDocs} /></span>))}
           {type.index && <span>{type.properties.length > 0 && ', '}
             {'['}{type.index.name}: <TypeName>string</TypeName>{']: '}
-            <Type type={type.index.type} context={context} />
+            <Type type={type.index.type} apiDocs={apiDocs} />
           </span>}
           {'}'}
         </span>
@@ -66,31 +67,31 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
       return (
         <span>
           {'['}
-          {type.properties.map(joined(', ', p => <Type type={p} context={context} />))}
+          {type.properties.map(joined(', ', p => <Type type={p} apiDocs={apiDocs} />))}
           {']'}
         </span>
     )
     case 'Function':
       return (
         <span>
-          {type.typeParameters && <TypeParameters parameters={type.typeParameters} context={context} />}
+          {type.typeParameters && <TypeParameters parameters={type.typeParameters} apiDocs={apiDocs} />}
           (
           {type.parameters.map(joined(', ', p =>
-            <span>{p.name}: <Type type={p.type} context={context} /></span>
+            <span>{p.name}: <Type type={p.type} apiDocs={apiDocs} /></span>
           ))}
-          ) => <Type type={type.returnType} context={context} />
+          ) => <Type type={type.returnType} apiDocs={apiDocs} />
         </span>
     )
     case 'Union':
       return (
         <span>
-          {type.types.map(joined(' | ', t => <Type type={t} context={context} />))}
+          {type.types.map(joined(' | ', t => <Type type={t} apiDocs={apiDocs} />))}
         </span>
     )
     case 'Intersection':
       return (
         <span>
-          {type.types.map(joined(' & ', t => <Type type={t} context={context} />))}
+          {type.types.map(joined(' & ', t => <Type type={t} apiDocs={apiDocs} />))}
         </span>
     )
     case 'BooleanLiteral':
@@ -102,9 +103,9 @@ export const Type = ({type, context}: {type: TypeBound, context: Package}): Reac
   }
 }
 
-export const TypeParameters = ({parameters, context}: {parameters: Array<TypeBound>, context: Package}) =>
+export const TypeParameters = ({parameters, apiDocs}: {parameters: Array<TypeBound>, apiDocs: ApiDocs}) =>
   <span>
     {'<'}
-    {parameters.map(joined(', ', p => <Type type={p} context={context} />))}
+    {parameters.map(joined(', ', p => <Type type={p} apiDocs={apiDocs} />))}
     {'>'}
   </span>

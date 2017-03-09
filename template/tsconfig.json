@@ -12,6 +12,7 @@
     "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
     "rootDir": ".",
+    "outDir": "dist",
     "types": [
       "webpack"
     ]

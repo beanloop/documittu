@@ -1,17 +1,30 @@
-import {Package, TypeDeclaration} from 'documittu-analyzer-ts'
+import {ObjectTypeBound, TypeDeclaration} from 'documittu-analyzer-ts'
 import * as React from 'react'
+import {ApiDocs} from '../../lib/entities'
 import {DocBlock, ImportAs, Markdown, Property} from '../ui/docs'
+import {Type} from '../ui/types'
 
-export const TypeDetail = ({type, context}: {type: TypeDeclaration, context: Package}) => {
+export const TypeDetail = ({type, apiDocs}: {type: TypeDeclaration, apiDocs: ApiDocs}) => {
+  const type_ = type.type
   return (
     <div>
-      <h4>{type.name}</h4>
+      <h3>{type.name}</h3>
       <DocBlock>
-        <ImportAs declaration={type} context={context} />
+        <ImportAs declaration={type} apiDocs={apiDocs} />
         <Markdown source={type.documentation} />
       </DocBlock>
-      <h5>Properties</h5>
-      {type.properties.map(prop => <Property key={prop.name} prop={prop} showOptional context={context} />)}
+      {type_.kind === 'Object'
+        ? <div>
+            <h4>Properties</h4>
+            {(type_ as ObjectTypeBound).properties.map(prop =>
+              <Property key={prop.name} prop={prop} showOptional apiDocs={apiDocs} />
+            )}
+          </div>
+        : <div>
+            <h4>Type</h4>
+            {<Type type={type_} apiDocs={apiDocs} />}
+          </div>
+      }
     </div>
   )
 }

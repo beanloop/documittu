@@ -1,8 +1,8 @@
 // import slug from 'slug'
-import {Module, Package} from 'documittu-analyzer-ts'
+import {Module} from 'documittu-analyzer-ts'
 import {basename, dirname, join, normalize} from 'path'
-import {ModulePageConfig, Page, TopLevel} from './entities'
-import {moduleUrl} from './urls'
+import {ApiDocs, ModulePageConfig, Page, TopLevel} from './entities'
+import {moduleUrl, rootUrl} from './urls'
 
 function slug(a) {return a.replace(/[^a-zA-Z0-9-]/, '-').replace(/--/, '-')}
 
@@ -18,18 +18,26 @@ export function createUrl(attributes, path) {
   return path
 }
 
-export function buildRoutes(pages, apiData: Package) {
-  let routes
+export function buildRoutes(pages, apiDocs: ApiDocs) {
+  let routes: Array<TopLevel>
 
   if (pages) {
     routes = buildPageRoutes(pages)
+    if (apiDocs) {
+      routes = routes.concat(buildApiDocsRoutes(apiDocs))
+    }
   }
-  else if (apiData) {
-    routes = buildApiDataRoutes(apiData)
+  else if (apiDocs) {
+    routes = [
+      buildApiDocsRoutes(apiDocs),
+      {kind: 'redirect', url: '/', to: rootUrl(apiDocs), title: undefined},
+    ]
   }
   else {
-    throw 'Neither pages nor apiData was provided'
+    throw 'Neither pages nor apiDocs was provided'
   }
+
+  console.log('routes', routes)
 
   return routes
 }
@@ -102,31 +110,35 @@ function buildPageRoutes(pages) {
   return routes
 }
 
-function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
+function buildApiDocsRoutes(apiDocs: ApiDocs): TopLevel {
   const modules = {} as {[dirnmame: string]: Array<ModulePageConfig>}
   const indexModules = {} as {[dirnmame: string]: ModulePageConfig}
   let rootModule: ModulePageConfig | undefined
+  const docsRoot = rootUrl(apiDocs)
 
-  console.log('apiData.mainModule', apiData.mainModule)
-  Object.values(apiData.modules)
+  console.log('apiDocs.mainModule', apiDocs.data.mainModule)
+  Object.values(apiDocs.data.modules)
     .forEach((module: Module) => {
-      const url = moduleUrl(module, apiData)
+      const url = moduleUrl(module, apiDocs)
       const declarations = Object.keys(module.declarations)
       if (
         declarations.length === 0 &&
-        url !== '/'
+        url !== docsRoot
       ) return
 
       console.log('module.outPath', module.outPath)
-      const title = apiData.mainModule === module.outPath
-        ? apiData.name
-        : basename(module.outPath).replace(/\.js$/, '')
+      const isMain = apiDocs.data.mainModule === module.outPath
+      if (isMain) {
+        module.name = apiDocs.data.name
+      }
 
       const modulePage: ModulePageConfig = {
-        title,
+        title: isMain
+          ? apiDocs.title || 'Api Documentation'
+          : module.name,
         url,
         module,
-        apiData,
+        apiDocs,
         modules: [],
 
         components: [],
@@ -159,7 +171,7 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
       })
 
       module.reexports.forEach(e => {
-        const originalModule = apiData.modules[e.path]
+        const originalModule = apiDocs.data.modules[e.path]
         if (!originalModule) return
         let declaration = originalModule.declarations[e.id]
         if (!declaration) return
@@ -184,7 +196,7 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
         }
       })
 
-      if (url === '/') {
+      if (url === docsRoot) {
         rootModule = modulePage
       } else {
         const dir = dirname(module.outPath)
@@ -230,12 +242,13 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
           title: basename(dir),
           url: dirname(url),
           module: {
+            name: basename(dir),
             srcPath: '',
             outPath: join(dirname(outPath), 'index.js'),
             declarations: {},
             reexports: [],
           },
-          apiData,
+          apiDocs,
           modules: modules[dir],
           components: [],
           types: [],
@@ -272,20 +285,21 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
 
   if (rootModule) {
     rootModule.modules = rootModules
-    return [{kind: 'module' as 'module', ...rootModule}]
+    return {kind: 'module' as 'module', ...rootModule}
   }
   else {
-    return [{
+    return {
       kind: 'module',
-      title: apiData.name,
-      url: '/',
+      title: apiDocs.title || 'Api Documentation',
+      url: docsRoot,
       module: {
+        name: apiDocs.data.name,
         srcPath: '',
         outPath: '',
         declarations: {},
         reexports: [],
       },
-      apiData,
+      apiDocs,
       modules: rootModules,
 
       components: [],
@@ -293,6 +307,6 @@ function buildApiDataRoutes(apiData: Package): Array<TopLevel> {
       classes: [],
       functions: [],
       variables: [],
-    }]
+    }
   }
 }

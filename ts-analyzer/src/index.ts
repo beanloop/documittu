@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as glob from 'glob'
-import {dirname, join, normalize, relative} from 'path'
+import {basename, dirname, join, normalize, relative} from 'path'
 import * as ts from 'typescript'
 
 export type Package = {
@@ -21,6 +21,7 @@ export type Reexport = {
 }
 
 export type Module = {
+  name: string
   srcPath: string
   outPath: string
   declarations: {[declarationId: string]: Declaration}
@@ -47,8 +48,9 @@ export type BaseDeclaration = DocEntry & {
 }
 
 export type TypeDeclaration = BaseDeclaration & {
+  type: TypeBound
   parameters?: Array<TypeBound>
-  properties: Array<TypeProperty>
+  // properties: Array<TypeProperty>
 }
 
 export type TypeProperty = DocEntry & {
@@ -87,11 +89,16 @@ export type Declaration
   | ({kind: 'Function'} & FunctionDeclaration)
   | ({kind: 'Variable'} & VariableDeclaration)
 
+export type ObjectTypeBound = {
+  properties: Array<TypeProperty>
+  index?: {name: string, type: TypeBound}
+}
+
 export type TypeBound
   = {kind: 'Named', name: string, parameters?: Array<TypeBound>, id?: string, importedFrom?: string}
-  | {kind: 'Object', properties: Array<{name: string, type: TypeBound}>, index?: {name: string, type: TypeBound}}
+  | ({kind: 'Object'} & ObjectTypeBound)
   | {kind: 'Tuple', properties: Array<TypeBound>}
-  | {kind: 'Function', typeParameters?: Array<TypeBound>, parameters: Array<{name: string, type: TypeBound}>, returnType: TypeBound}
+  | {kind: 'Function', typeParameters?: Array<TypeBound>, parameters: Array<TypeProperty>, returnType: TypeBound}
   | {kind: 'Intersection', types: Array<TypeBound>}
   | {kind: 'Union', types: Array<TypeBound>}
   | {kind: 'BooleanLiteral', value: string}
@@ -123,6 +130,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     const srcPath = relative(packagePath, sourceFile.fileName)
     const outPath = outputPath(sourceFile.fileName)
     analyzeResult.modules[outPath] = {
+      name: basename(outPath, '.js'),
       srcPath,
       outPath,
       declarations: {},
@@ -370,14 +378,15 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     return type.types.reduce((a, t) => [...a, ...serializeType(t)], [] as Array<TypeProperty>)
   }
 
-  function serializeSymbol(symbol: ts.Symbol, atLocation = symbol.valueDeclaration): DocEntry {
+  function serializeSymbol(symbol: ts.Symbol, atLocation = symbol.valueDeclaration, {prefferNamed = true} = {}): DocEntry {
     return {
       name: symbol.getName(),
       documentation: getDocs(symbol),
       type: serializeTypeBound(
         atLocation
           ? checker.getTypeOfSymbolAtLocation(symbol, atLocation)
-          : checker.getDeclaredTypeOfSymbol(symbol)
+          : checker.getDeclaredTypeOfSymbol(symbol),
+        {prefferNamed}
       ),
     }
   }
@@ -420,8 +429,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
     }
   }
 
-  function serializeTypeBound(type: ts.Type): TypeBound {
-    if (type.aliasSymbol) {
+  function serializeTypeBound(type: ts.Type, {prefferNamed = true} = {}): TypeBound {
+    if (prefferNamed && type.aliasSymbol) {
       return serializeNamedTypeBound(type)
     }
     if (type.flags & ts.TypeFlags.Object) {
@@ -442,14 +451,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
           return {
             kind: 'Function',
             typeParameters: signature.typeParameters && signature.typeParameters.map(serializeTypeBound),
-            parameters: signature.parameters.map(parameter => ({
-              name: parameter.name,
-              type: serializeTypeBound(
-                parameter.valueDeclaration
-                  ? checker.getTypeOfSymbolAtLocation(parameter, parameter.valueDeclaration)
-                  : checker.getDeclaredTypeOfSymbol(parameter)
-              ),
-            })),
+            parameters: signature.parameters.map(serializeTypeProperty),
             returnType: serializeTypeBound(signature.getReturnType()),
           }
         } else {
@@ -458,14 +460,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
             Object.keys(type['stringIndexInfo'].declaration.symbol.declarations[0].locals)[0]
           return {
             kind: 'Object',
-            properties: type.getProperties().map(property => ({
-              name: property.name,
-              type: serializeTypeBound(
-                property.valueDeclaration
-                  ? checker.getTypeOfSymbolAtLocation(property, property.valueDeclaration)
-                  : checker.getDeclaredTypeOfSymbol(property)
-              ),
-            })),
+            properties: type.getProperties().map(serializeTypeProperty),
             index: index && {name: indexName, type: serializeTypeBound(index)},
           }
         }
@@ -527,12 +522,7 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
   }
 
   function serializeTypeDeclaration(symbol: ts.Symbol) {
-    const details = serializeSymbol(symbol) as TypeDeclaration
-
-    let type = checker.getDeclaredTypeOfSymbol(symbol)
-    const properties = type.getProperties()
-    details.properties = properties.map(serializeTypeProperty)
-    return details
+    return serializeSymbol(symbol, undefined, {prefferNamed: false})
   }
 
   /** True if this is visible outside this file, false otherwise */

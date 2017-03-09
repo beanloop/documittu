@@ -10,6 +10,7 @@ import {basename, dirname} from 'path'
 import * as React from 'react'
 import {Link} from 'react-router-dom'
 import styled from 'styled-components'
+import {materialColors} from 'styled-material/dist/src/colors'
 import {Row} from 'styled-material/dist/src/layout'
 import {Body} from 'styled-material/dist/src/typography'
 import {ModulePageConfig} from '../../lib/entities'
@@ -18,9 +19,9 @@ import {Type, TypeParameters, joined} from '../ui/types'
 
 export const ModuleDetail = ({module, page}: {module: Module, page: ModulePageConfig}) =>
   <div>
-    {basename(module.outPath) === 'index.js' && page.apiData.readmes[dirname(module.outPath)]
-      ? <Markdown source={page.apiData.readmes[dirname(module.outPath)]} />
-      : <h2>{page.title}</h2>
+    {basename(module.outPath) === 'index.js' && page.apiDocs.data.readmes[dirname(module.outPath)]
+      ? <Markdown source={page.apiDocs.data.readmes[dirname(module.outPath)]} />
+      : <h2>{module.name}</h2>
     }
 
     {page.modules.length > 0 &&
@@ -77,19 +78,19 @@ const ModuleListItem = ({page}: {page: ModulePageConfig}) => {
   return (
     <div>
       <h4>
-        <Link to={page.url}>{page.title}</Link>
+        <Link to={page.url} style={{color: materialColors['indigo-500']}}>{page.title}</Link>
       </h4>
-      <LeadDocumentation source={page.documentation} />
+      {/*<LeadDocumentation source={page.documentation} />*/}
     </div>
   )
 }
 
 const ComponentListItem = ({component, page}: {component: ComponentDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem item={component} context={page.apiData}>
+    <DocListItem item={component} apiDocs={page.apiDocs}>
       <h4>
         {'<'}
-        <EntryLink declaration={component} module={page.module} context={page.apiData} />
+        <EntryLink declaration={component} module={page.module} apiDocs={page.apiDocs} />
         {'>'}
       </h4>
       <LeadDocumentation source={component.documentation} />
@@ -99,9 +100,9 @@ const ComponentListItem = ({component, page}: {component: ComponentDeclaration, 
 
 const TypeListItem = ({type, page}: {type: TypeDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem item={type} context={page.apiData}>
+    <DocListItem item={type} apiDocs={page.apiDocs}>
       <h4>
-        <EntryLink declaration={type} module={page.module} context={page.apiData} />
+        <EntryLink declaration={type} module={page.module} apiDocs={page.apiDocs} />
       </h4>
       <LeadDocumentation source={type.documentation} />
     </DocListItem>
@@ -110,9 +111,9 @@ const TypeListItem = ({type, page}: {type: TypeDeclaration, page: ModulePageConf
 
 const ClassListItem = ({type, page}: {type: ClassDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem item={type} context={page.apiData}>
+    <DocListItem item={type} apiDocs={page.apiDocs}>
       <h4>
-        <EntryLink declaration={type} module={page.module} context={page.apiData} />
+        <EntryLink declaration={type} module={page.module} apiDocs={page.apiDocs} />
       </h4>
       <LeadDocumentation source={type.documentation} />
     </DocListItem>
@@ -121,18 +122,18 @@ const ClassListItem = ({type, page}: {type: ClassDeclaration, page: ModulePageCo
 
 const FunctionListItem = ({fn, page}: {fn: FunctionDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem item={fn} context={page.apiData}>
+    <DocListItem item={fn} apiDocs={page.apiDocs}>
       <Row vertical='baseline'>
         <h4>
-          <EntryLink declaration={fn} module={page.module} context={page.apiData} />
+          <EntryLink declaration={fn} module={page.module} apiDocs={page.apiDocs} />
         </h4>
         <InfoLine>
           <span>:&emsp;</span>
           <code>
-            {fn.typeParameters && <TypeParameters parameters={fn.typeParameters} context={page.apiData} />}
+            {fn.typeParameters && <TypeParameters parameters={fn.typeParameters} apiDocs={page.apiDocs} />}
             (
-            {fn.parameters.map(joined(', ', p => <span>{p.name}: <Type type={p.type} context={page.apiData} /></span>))}
-            ) => <Type type={fn.returnType} context={page.apiData} />
+            {fn.parameters.map(joined(', ', p => <span>{p.name}: <Type type={p.type} apiDocs={page.apiDocs} /></span>))}
+            ) => <Type type={fn.returnType} apiDocs={page.apiDocs} />
           </code>
         </InfoLine>
       </Row>
@@ -143,15 +144,15 @@ const FunctionListItem = ({fn, page}: {fn: FunctionDeclaration, page: ModulePage
 
 const VariableListItem = ({variable, page}: {variable: VariableDeclaration, page: ModulePageConfig}) => {
   return (
-    <DocListItem item={variable} context={page.apiData}>
+    <DocListItem item={variable} apiDocs={page.apiDocs}>
       <Row vertical='baseline'>
         <h4>
-          <EntryLink declaration={variable} module={page.module} context={page.apiData} />
+          <EntryLink declaration={variable} module={page.module} apiDocs={page.apiDocs} />
         </h4>
         <InfoLine>
           <span>:&emsp;</span>
           <code>
-            <Type type={variable.type} context={page.apiData} />
+            <Type type={variable.type} apiDocs={page.apiDocs} />
           </code>
         </InfoLine>
       </Row>

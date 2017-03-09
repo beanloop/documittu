@@ -2,7 +2,7 @@ import * as React from 'react'
 import DocumentTitle from 'react-document-title'
 import {Page} from '../../lib/entities'
 
-export const SinglePage = ({page, appTitle}: {page: Page, appTitle: String}) =>
+export const SinglePage = ({page, appTitle}: {page: Page, appTitle: string}) =>
   <div>
     <DocumentTitle title={`${page.title} - ${appTitle}`} />
     <page.component />

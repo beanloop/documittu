@@ -6,7 +6,7 @@ import {FolderPageConfig} from '../../lib/entities'
 import {RouterLink} from '../router-link'
 import {Container, Content, Nav, NavLink} from '../ui/sidenav-layout'
 
-export const FolderPage = ({page, appTitle}: {page: FolderPageConfig, appTitle: String}) =>
+export const FolderPage = ({page, appTitle}: {page: FolderPageConfig, appTitle: string}) =>
   <Container>
     {page.redirectTo &&
       <Route exact path={page.url} render={() =>

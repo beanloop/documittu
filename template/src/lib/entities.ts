@@ -9,6 +9,12 @@ import {
   VariableDeclaration
 } from 'documittu-analyzer-ts'
 
+export type ApiDocs = {
+  data: Package
+  title?: string
+  url?: string
+}
+
 export type Page = {
   url: string
   title: string
@@ -27,7 +33,7 @@ export type ModulePageConfig = {
   url: string
   title: string
   module: Module
-  apiData: Package
+  apiDocs: ApiDocs
   modules: Array<ModulePageConfig>
 
   components: Array<ComponentDeclaration & {reexport?: Reexport}>
