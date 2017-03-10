@@ -1,6 +1,6 @@
 {
   "name": "documittu",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "bin": {
     "documittu": "./bin/documittu.js"
@@ -13,7 +13,7 @@
     "tslint-config-beanloop": "^0.1.0"
   },
   "dependencies": {
-    "documittu-template-default": "^0.1.0",
+    "documittu-template-default": "^0.1.1",
     "documittu-markdown-loader": "^0.1.0",
     "@types/node": "^7.0.5",
     "@types/react": "^15.0.10",
