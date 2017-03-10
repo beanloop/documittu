@@ -582,7 +582,8 @@ export function analyze(fileNames: Array<string>, analyzeResult: Package, packag
 
   function isJsxType(symbol?: ts.Symbol): boolean {
     if (!symbol) return false
-    return checker.getFullyQualifiedName(symbol) === 'global.JSX.Element'
+    const fqn = checker.getFullyQualifiedName(symbol)
+    return fqn === 'global.JSX.Element' || fqn === 'React.ReactElement'
   }
 }
 

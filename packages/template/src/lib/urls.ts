@@ -2,6 +2,8 @@ import {Module, Reexport, UntaggedDeclaration} from 'documittu-analyzer-ts'
 import {join} from 'path'
 import {ApiDocs} from './entities'
 
+export const defaultTitle = 'API Documentation'
+
 export const rootUrl = (apiDocs: ApiDocs) => apiDocs.url || '/docs'
 
 export function moduleUrl(module: Module, apiDocs: ApiDocs) {

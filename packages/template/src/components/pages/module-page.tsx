@@ -8,7 +8,7 @@ import styled from 'styled-components'
 import {materialColors} from 'styled-material/dist/src/colors'
 import {Column} from 'styled-material/dist/src/layout'
 import {ModulePageConfig} from '../../lib/entities'
-import {entryUrl} from '../../lib/urls'
+import {entryUrl, defaultTitle} from '../../lib/urls'
 import {ClassDetail} from '../docs/class-detail'
 import {ComponentDetail} from '../docs/component-detail'
 import {FunctionDetail} from '../docs/function-detail'
@@ -47,7 +47,7 @@ const NavBlock = styled.div`
 
 export const ModulePage = ({page, appTitle, path}: {page: ModulePageConfig, appTitle: string, path: Array<ModulePageConfig>}) =>
   <Column>
-    <DocumentTitle title={`${page.apiDocs.title || 'Api Documentation'} - ${appTitle}`} />
+    <DocumentTitle title={`${page.apiDocs.title || defaultTitle} - ${appTitle}`} />
     < PathBar >
       {path.map((part, i) =>
         <span key={i}>

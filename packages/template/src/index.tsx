@@ -1,17 +1,14 @@
 import 'babel-polyfill'
 import * as React from 'react'
 import {render} from 'react-dom'
-// import apiDocs from './analyze-result.json'
 import './assets/prism.css'
 import {App} from './components/app'
 import {ApiDocs} from './lib/entities'
 
-export const SideMenuLayout = () => <span>Fork!</span>
-
-function requireAll(requireapiDocs) {
+function requireAll(requireContext) {
   const pages = {}
-  requireapiDocs.keys().forEach(file => {
-    pages[file] = requireapiDocs(file)
+  requireContext.keys().forEach(file => {
+    pages[file] = requireContext(file)
   })
   return pages
 }
@@ -53,8 +50,3 @@ document.addEventListener('mouseup', event => {
     target.blur()
   }
 })
-
-// start({
-//   title: 'test',
-//   // apiDocs,
-// })

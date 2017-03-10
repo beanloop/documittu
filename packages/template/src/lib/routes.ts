@@ -2,9 +2,9 @@
 import {Module} from 'documittu-analyzer-ts'
 import {basename, dirname, join, normalize} from 'path'
 import {ApiDocs, ModulePageConfig, Page, TopLevel} from './entities'
-import {moduleUrl, rootUrl} from './urls'
+import {moduleUrl, rootUrl, defaultTitle} from './urls'
 
-function slug(a) {return a.replace(/[^a-zA-Z0-9-]/, '-').replace(/--/, '-')}
+function slug(a) {return a.replace(/[^a-zA-Z0-9-]/g, '-').replace(/--/g, '-')}
 
 export function createUrl(attributes, path) {
   if (attributes.path) return attributes.path
@@ -123,6 +123,7 @@ function buildApiDocsRoutes(apiDocs: ApiDocs): TopLevel {
       const declarations = Object.keys(module.declarations)
       if (
         declarations.length === 0 &&
+        module.reexports.length === 0 &&
         url !== docsRoot
       ) return
 
@@ -134,7 +135,7 @@ function buildApiDocsRoutes(apiDocs: ApiDocs): TopLevel {
 
       const modulePage: ModulePageConfig = {
         title: isMain
-          ? apiDocs.title || 'Api Documentation'
+          ? apiDocs.title || defaultTitle
           : module.name,
         url,
         module,
@@ -237,7 +238,15 @@ function buildApiDocsRoutes(apiDocs: ApiDocs): TopLevel {
           outPath = module.module.outPath
         }
       }
-      if (!indexModules[dir]) {
+      if (indexModules[dir]) {
+        indexModules[dir].modules = indexModules[dir].modules.concat(
+          modules[dir].filter(m => m.url !== indexModules[dir].url)
+        )
+
+        indexModules[dir].title = basename(dir)
+        indexModules[dir].url = dirname(url)
+        indexModules[dir].module.name = basename(dir)
+      } else {
         indexModules[dir] = {
           title: basename(dir),
           url: dirname(url),
@@ -290,7 +299,7 @@ function buildApiDocsRoutes(apiDocs: ApiDocs): TopLevel {
   else {
     return {
       kind: 'module',
-      title: apiDocs.title || 'Api Documentation',
+      title: apiDocs.title || defaultTitle,
       url: docsRoot,
       module: {
         name: apiDocs.data.name,

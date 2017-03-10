@@ -71,7 +71,7 @@ export const EntryLink = ({declaration, module, apiDocs}: {declaration: Untagged
 export function importPath(module: Module, apiDocs: ApiDocs) {
   return module.outPath === apiDocs.data.mainModule
     ? apiDocs.data.name
-    : join(apiDocs.data.name, module.outPath).replace(/\.js$/, '')
+    : join(apiDocs.data.name, module.outPath).replace(/(?:\/index)?\.js$/, '')
 }
 
 export const ImportAs = ({declaration, apiDocs}: {declaration: UntaggedDeclaration, apiDocs: ApiDocs}) => {
